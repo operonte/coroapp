@@ -42,12 +42,17 @@ final currentAppUserProvider = StreamProvider<AppUser?>((ref) {
   return authAsync.when(
     data: (user) {
       if (user == null) {
-        return const Stream.empty();
+        // Usuario no autenticado: emitimos null una vez.
+        return Stream<AppUser?>.value(null);
       }
       return ref.watch(userRepositoryProvider).watchUser(user.uid);
     },
-    loading: () => const Stream.empty(),
-    error: (_, __) => const Stream.empty(),
+    // Mientras se resuelve el estado de auth, emitimos null una vez para que
+    // la UI pueda avanzar (por ejemplo, mostrar la pantalla de login/perfil).
+    loading: () => Stream<AppUser?>.value(null),
+    // En caso de error, preferimos que la UI reciba null y pueda mostrar algo
+    // manejable en lugar de quedarse bloqueada cargando para siempre.
+    error: (_, __) => Stream<AppUser?>.value(null),
   );
 });
 

@@ -41,6 +41,7 @@ dependencies:
   flutter_riverpod: ^3.2.1
   google_sign_in: ^7.2.0
   webview_flutter: ^4.13.1
+  just_audio: ^0.10.5
 
 dev_dependencies:
   flutter_test:
