@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "361690571544",
+    "project_id": "coroapp-e8122",
+    "storage_bucket": "coroapp-e8122.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:361690571544:android:eac0f67186858108fbb46d",
+        "android_client_info": {
+          "package_name": "com.operonte.coroapp.coroapp"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "361690571544-oe2rjlcek9qm1ql98jscs0i8ip4m4l1m.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBi2asaCb3IUYwJ2RHVgk88M-x2yebRVhI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "361690571544-oe2rjlcek9qm1ql98jscs0i8ip4m4l1m.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
