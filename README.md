@@ -9,15 +9,13 @@ Aplicación Flutter para organización de repertorio de coros cristianos, con:
 
 ## Descarga de la APK
 
-En este repositorio, la APK de release está en:
+Puedes descargar la APK de release desde:
 
-- `releases/app-release.apk`
-
-Al subir este repo a GitHub podrás descargarla directamente desde la interfaz web.
+- [Descargar APK de CoroApp](releases/app-release.apk)
 
 ## Política de privacidad
 
 La política de privacidad de CoroApp está disponible en:
 
-- `PRIVACY.md` en la raíz de este repositorio.
+- [Política de privacidad de CoroApp](PRIVACY.md)
 
