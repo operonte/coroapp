@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/providers.dart';
-import '../../screens/privacy_policy_screen.dart';
+import '../settings/settings_screen.dart';
 import '../songs/songs_list_screen.dart';
 
 class HomeShell extends ConsumerWidget {
@@ -34,14 +34,15 @@ class HomeShell extends ConsumerWidget {
 
         return Scaffold(
           appBar: AppBar(
-            title: Text('CoroApp - ${user.voice ?? ''}'),
+            title: Text('CoroApp · ${(user.voice ?? '').toUpperCase()}'),
             actions: [
               IconButton(
-                icon: const Icon(Icons.privacy_tip_outlined),
+                icon: const Icon(Icons.settings_outlined),
+                tooltip: 'Configuración',
                 onPressed: () {
                   Navigator.of(context).push(
                     MaterialPageRoute(
-                      builder: (_) => const PrivacyPolicyScreen(),
+                      builder: (_) => const SettingsScreen(),
                     ),
                   );
                 },

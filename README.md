@@ -11,7 +11,17 @@ Aplicación Flutter para organización de repertorio de coros cristianos, con:
 
 Puedes descargar la APK de release desde:
 
-- [Descargar APK de CoroApp](https://github.com/operonte/coroapp/releases/download/v0.1.2/app-release.apk)
+- [Descargar APK de CoroApp](https://github.com/operonte/coroapp/releases/download/v0.1.3/app-release.apk)
+
+## Configuración de jefe de grupo
+
+Para que los miembros puedan convertirse en jefe de grupo, añade el campo `leaderPassword` al documento del coro en Firestore (colección `choirs`):
+
+```
+choirs/coro_central_001
+  name: "Coro Central"
+  leaderPassword: "david_vera_2026"  # o la contraseña que definas
+```
 
 ## Política de privacidad
 

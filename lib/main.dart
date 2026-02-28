@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'screens/privacy_policy_screen.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'firebase_options.dart';
 import 'features/auth/auth_gate.dart';
+import 'screens/privacy_policy_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -26,8 +27,29 @@ class MyApp extends StatelessWidget {
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
           colorScheme: ColorScheme.fromSeed(
-            seedColor: const Color(0xFF4C6FFF),
+            seedColor: const Color(0xFF2C3E80),
             brightness: Brightness.light,
+          ).copyWith(
+            primary: const Color(0xFF2C3E80),
+            secondary: const Color(0xFFD4A84B),
+          ),
+          textTheme: GoogleFonts.sourceSans3TextTheme(
+            ThemeData.light().textTheme,
+          ),
+          appBarTheme: AppBarTheme(
+            centerTitle: true,
+            elevation: 0,
+            titleTextStyle: GoogleFonts.sourceSans3(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              color: Colors.white,
+            ),
+          ),
+          cardTheme: CardThemeData(
+            elevation: 2,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
           ),
           useMaterial3: true,
         ),
@@ -52,7 +74,7 @@ class _HomePlaceholder extends StatelessWidget {
             onPressed: () {
               Navigator.of(context).push(
                 MaterialPageRoute(
-                  builder: (_) => const PrivacyPolicyScreen(),
+                  builder: (_) => PrivacyPolicyScreen(),
                 ),
               );
             },
@@ -117,7 +139,7 @@ class _MyHomePageState extends State<MyHomePage> {
             onPressed: () {
               Navigator.of(context).push(
                 MaterialPageRoute(
-                  builder: (_) => const PrivacyPolicyScreen(),
+                  builder: (_) => PrivacyPolicyScreen(),
                 ),
               );
             },
