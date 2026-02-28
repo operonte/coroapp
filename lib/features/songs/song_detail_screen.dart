@@ -25,6 +25,7 @@ class _SongDetailScreenState extends State<SongDetailScreen> {
   String? _error;
   Duration _position = Duration.zero;
   Duration _duration = Duration.zero;
+  String? _resolvedAudioUrl;
 
   @override
   void initState() {
@@ -45,6 +46,7 @@ class _SongDetailScreenState extends State<SongDetailScreen> {
 
     try {
       final url = await resolveStorageUrl(gsUrl);
+      if (mounted) setState(() => _resolvedAudioUrl = url);
       await _player.setUrl(url);
 
       _player.positionStream.listen((pos) {
@@ -65,26 +67,51 @@ class _SongDetailScreenState extends State<SongDetailScreen> {
         _loading = false;
       });
     } catch (e) {
-      setState(() {
-        _error = 'No se pudo cargar el audio.';
-        _loading = false;
-      });
+      String? fallbackUrl;
+      try {
+        fallbackUrl = await resolveStorageUrl(gsUrl);
+      } catch (_) {}
+      if (mounted) {
+        setState(() {
+          _error = 'No se pudo cargar aquí. Puedes abrirlo con otra app.';
+          _loading = false;
+          _resolvedAudioUrl = fallbackUrl;
+        });
+      }
     }
   }
 
-  Future<void> _openUrl(String? rawUrl) async {
-    if (rawUrl == null || rawUrl.isEmpty) return;
+  Future<void> _openInExternalApp(String? rawUrl, {String? directUrl}) async {
+    String? url = directUrl;
+    if (url == null && rawUrl != null && rawUrl.isNotEmpty) {
+      try {
+        url = await resolveStorageUrl(rawUrl);
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('No se pudo obtener el enlace')),
+          );
+        }
+        return;
+      }
+    }
+    if (url == null || url.isEmpty) return;
+    final uri = Uri.tryParse(url);
+    if (uri == null) return;
     try {
-      final url = await resolveStorageUrl(rawUrl);
-      final uri = Uri.tryParse(url);
-      if (uri == null) return;
       if (await canLaunchUrl(uri)) {
         await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('No hay app para abrir este archivo')),
+          );
+        }
       }
-    } catch (_) {
+    } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('No se pudo abrir el enlace')),
+          const SnackBar(content: Text('No se pudo abrir')),
         );
       }
     }
@@ -122,9 +149,22 @@ class _SongDetailScreenState extends State<SongDetailScreen> {
             if (_loading)
               const Center(child: CircularProgressIndicator())
             else if (_error != null)
-              Text(
-                _error!,
-                style: const TextStyle(color: Colors.red),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    _error!,
+                    style: TextStyle(color: Theme.of(context).colorScheme.error),
+                  ),
+                  if (_resolvedAudioUrl != null) ...[
+                    const SizedBox(height: 12),
+                    OutlinedButton.icon(
+                      onPressed: () => _openInExternalApp(null, directUrl: _resolvedAudioUrl),
+                      icon: const Icon(Icons.open_in_new, size: 18),
+                      label: const Text('Abrir con app externa'),
+                    ),
+                  ],
+                ],
               )
             else
               Column(
@@ -157,58 +197,36 @@ class _SongDetailScreenState extends State<SongDetailScreen> {
                       );
                     },
                   ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(_format(_position)),
-                      Text(_format(_duration)),
-                    ],
-                  ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(_format(_position)),
+                        Text(_format(_duration)),
+                      ],
+                    ),
+                  if (_resolvedAudioUrl != null) ...[
+                    const SizedBox(height: 12),
+                    OutlinedButton.icon(
+                      onPressed: () => _openInExternalApp(null, directUrl: _resolvedAudioUrl),
+                      icon: const Icon(Icons.open_in_new, size: 18),
+                      label: const Text('Abrir con app externa'),
+                    ),
+                  ],
                 ],
               ),
             const SizedBox(height: 24),
             if (song.lyricsUrl != null)
-              InkWell(
-                onTap: () => _openUrl(song.lyricsUrl),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.description_outlined),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Abrir letra (PDF)',
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.primary,
-                          decoration: TextDecoration.underline,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+              _MediaOption(
+                icon: Icons.description_outlined,
+                title: 'Letra (PDF)',
+                onOpen: () => _openInExternalApp(song.lyricsUrl),
               ),
-            if (song.demoVideoUrl != null) ...[
-              const SizedBox(height: 8),
-              InkWell(
-                onTap: () => _openUrl(song.demoVideoUrl),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.play_circle_outline),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Ver demo (video)',
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.primary,
-                          decoration: TextDecoration.underline,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+            if (song.demoVideoUrl != null)
+              _MediaOption(
+                icon: Icons.play_circle_outline,
+                title: 'Demo (video)',
+                onOpen: () => _openInExternalApp(song.demoVideoUrl),
               ),
-            ],
           ],
         ),
       ),
@@ -216,3 +234,46 @@ class _SongDetailScreenState extends State<SongDetailScreen> {
   }
 }
 
+class _MediaOption extends StatelessWidget {
+  const _MediaOption({
+    required this.icon,
+    required this.title,
+    required this.onOpen,
+  });
+
+  final IconData icon;
+  final String title;
+  final VoidCallback onOpen;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        children: [
+          Icon(icon, size: 24, color: Theme.of(context).colorScheme.primary),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: Theme.of(context).textTheme.bodyLarge),
+                Text(
+                  'Abrir con app externa',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                      ),
+                ),
+              ],
+            ),
+          ),
+          FilledButton.tonalIcon(
+            onPressed: onOpen,
+            icon: const Icon(Icons.open_in_new, size: 18),
+            label: const Text('Abrir'),
+          ),
+        ],
+      ),
+    );
+  }
+}

@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'firebase_options.dart';
-import 'features/auth/auth_gate.dart';
+import 'features/onboarding/app_initializer.dart';
 import 'screens/privacy_policy_screen.dart';
 
 Future<void> main() async {
@@ -39,6 +39,8 @@ class MyApp extends StatelessWidget {
           appBarTheme: AppBarTheme(
             centerTitle: true,
             elevation: 0,
+            backgroundColor: const Color(0xFF2C3E80),
+            foregroundColor: Colors.white,
             titleTextStyle: GoogleFonts.sourceSans3(
               fontSize: 18,
               fontWeight: FontWeight.w600,
@@ -53,7 +55,7 @@ class MyApp extends StatelessWidget {
           ),
           useMaterial3: true,
         ),
-        home: const AuthGate(),
+        home: const AppInitializer(),
       ),
     );
   }
