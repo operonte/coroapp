@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:just_audio_background/just_audio_background.dart';
 import 'firebase_options.dart';
 import 'features/onboarding/app_initializer.dart';
 import 'screens/privacy_policy_screen.dart';
@@ -11,6 +12,12 @@ Future<void> main() async {
 
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
+  );
+
+  await JustAudioBackground.init(
+    androidNotificationChannelId: 'com.operonte.coroapp.channel.audio',
+    androidNotificationChannelName: 'Reproducción de audio',
+    androidNotificationOngoing: true,
   );
 
   runApp(const MyApp());

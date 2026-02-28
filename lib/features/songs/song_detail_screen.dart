@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
+import 'package:just_audio_background/just_audio_background.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/models/song.dart';
 import '../../core/services/storage_url_service.dart';
+import '../../screens/pdf_viewer_screen.dart';
 
 class SongDetailScreen extends StatefulWidget {
   const SongDetailScreen({
@@ -47,7 +49,16 @@ class _SongDetailScreenState extends State<SongDetailScreen> {
     try {
       final url = await resolveStorageUrl(gsUrl);
       if (mounted) setState(() => _resolvedAudioUrl = url);
-      await _player.setUrl(url);
+      await _player.setAudioSource(
+        AudioSource.uri(
+          Uri.parse(url),
+          tag: MediaItem(
+            id: '${widget.song.id}_${widget.voice}',
+            title: widget.song.title,
+            album: widget.song.author ?? 'CoroApp',
+          ),
+        ),
+      );
 
       _player.positionStream.listen((pos) {
         if (!mounted) return;
@@ -81,6 +92,36 @@ class _SongDetailScreenState extends State<SongDetailScreen> {
     }
   }
 
+  Future<void> _viewPdfInApp(String rawUrl, String title) async {
+    String? url;
+    try {
+      url = await resolveStorageUrl(rawUrl);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              e.toString().contains('404')
+                  ? 'PDF no encontrado'
+                  : 'No se pudo cargar el PDF',
+            ),
+          ),
+        );
+      }
+      return;
+    }
+    if (url.isEmpty) return;
+    if (!mounted) return;
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => PdfViewerScreen(
+          pdfUrl: url!,
+          title: title,
+        ),
+      ),
+    );
+  }
+
   Future<void> _openInExternalApp(String? rawUrl, {String? directUrl}) async {
     String? url = directUrl;
     if (url == null && rawUrl != null && rawUrl.isNotEmpty) {
@@ -88,8 +129,13 @@ class _SongDetailScreenState extends State<SongDetailScreen> {
         url = await resolveStorageUrl(rawUrl);
       } catch (e) {
         if (mounted) {
+          final msg = e.toString().contains('404') || e.toString().contains('not found')
+              ? 'Archivo no encontrado en Storage'
+              : (e.toString().contains('403') || e.toString().contains('permission')
+                  ? 'Sin permiso de acceso. Revisa las reglas de Storage.'
+                  : 'No se pudo obtener el enlace');
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('No se pudo obtener el enlace')),
+            SnackBar(content: Text(msg)),
           );
         }
         return;
@@ -220,6 +266,7 @@ class _SongDetailScreenState extends State<SongDetailScreen> {
                 icon: Icons.description_outlined,
                 title: 'Letra (PDF)',
                 onOpen: () => _openInExternalApp(song.lyricsUrl),
+                onViewInApp: () => _viewPdfInApp(song.lyricsUrl!, song.title),
               ),
             if (song.demoVideoUrl != null)
               _MediaOption(
@@ -239,11 +286,13 @@ class _MediaOption extends StatelessWidget {
     required this.icon,
     required this.title,
     required this.onOpen,
+    this.onViewInApp,
   });
 
   final IconData icon;
   final String title;
   final VoidCallback onOpen;
+  final VoidCallback? onViewInApp;
 
   @override
   Widget build(BuildContext context) {
@@ -259,7 +308,9 @@ class _MediaOption extends StatelessWidget {
               children: [
                 Text(title, style: Theme.of(context).textTheme.bodyLarge),
                 Text(
-                  'Abrir con app externa',
+                  onViewInApp != null
+                      ? 'Ver en la app o abrir con otra'
+                      : 'Abrir con app externa',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                       ),
@@ -267,6 +318,14 @@ class _MediaOption extends StatelessWidget {
               ],
             ),
           ),
+          if (onViewInApp != null) ...[
+            FilledButton.tonalIcon(
+              onPressed: onViewInApp,
+              icon: const Icon(Icons.visibility, size: 18),
+              label: const Text('Ver'),
+            ),
+            const SizedBox(width: 8),
+          ],
           FilledButton.tonalIcon(
             onPressed: onOpen,
             icon: const Icon(Icons.open_in_new, size: 18),

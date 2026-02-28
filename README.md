@@ -13,6 +13,29 @@ Puedes descargar la APK de release desde:
 
 - [Descargar APK de CoroApp](https://github.com/operonte/coroapp/releases/download/v0.1.4/app-release.apk)
 
+## Firebase Storage: reglas y formato de URLs
+
+Para que los PDFs y audios se carguen correctamente, las **reglas de Firebase Storage** deben permitir lectura a usuarios autenticados:
+
+```javascript
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /{allPaths=**} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null;
+    }
+  }
+}
+```
+
+Las URLs en Firestore (`lyricsUrl`, `audioUrls`) pueden ser:
+- **gs://** – ej: `gs://coroapp-e8122.firebasestorage.app/coroapp/choirs/coro_central_001/songs/alabanza_total_001/letra.pdf`
+- **Ruta relativa** – ej: `coroapp/choirs/coro_central_001/songs/alabanza_total_001/letra.pdf`
+- **https://** – URL pública directa (se abre sin resolver)
+
+Asegúrate de que el archivo exista en Storage en la ruta indicada.
+
 ## Configuración de jefe de grupo
 
 Para que los miembros puedan convertirse en jefe de grupo, añade el campo `leaderPassword` al documento del coro en Firestore (colección `choirs`):
