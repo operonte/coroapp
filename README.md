@@ -11,7 +11,7 @@ Aplicación Flutter para organización de repertorio de coros cristianos, con:
 
 Puedes descargar la APK de release desde:
 
-- [Descargar APK de CoroApp](https://github.com/operonte/coroapp/releases/download/v0.1.4/app-release.apk)
+- [Descargar APK de CoroApp](https://github.com/operonte/coroapp/releases/download/v0.1.5/app-release.apk)
 
 ## Firebase Storage: reglas y formato de URLs
 
