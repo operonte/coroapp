@@ -11,9 +11,8 @@ class PrivacyPolicyScreen extends StatefulWidget {
 class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> {
   late final WebViewController _controller;
 
-  // TODO: Actualizar esta URL cuando publiques la política en la web
   static const String _privacyPolicyUrl =
-      'https://example.com/releases/coroapp/PRIVACY.md';
+      'https://operonte.github.io/releases/coroapp/policies/privacy_policy.html';
 
   @override
   void initState() {
