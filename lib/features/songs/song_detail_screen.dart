@@ -3,6 +3,7 @@ import 'package:just_audio/just_audio.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/models/song.dart';
+import '../../core/services/storage_url_service.dart';
 
 class SongDetailScreen extends StatefulWidget {
   const SongDetailScreen({
@@ -42,9 +43,8 @@ class _SongDetailScreenState extends State<SongDetailScreen> {
       return;
     }
 
-    final url = _gsToHttps(gsUrl);
-
     try {
+      final url = await resolveStorageUrl(gsUrl);
       await _player.setUrl(url);
 
       _player.positionStream.listen((pos) {
@@ -74,25 +74,20 @@ class _SongDetailScreenState extends State<SongDetailScreen> {
 
   Future<void> _openUrl(String? rawUrl) async {
     if (rawUrl == null || rawUrl.isEmpty) return;
-    final url = rawUrl.startsWith('gs://') ? _gsToHttps(rawUrl) : rawUrl;
-    final uri = Uri.tryParse(url);
-    if (uri == null) return;
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    try {
+      final url = await resolveStorageUrl(rawUrl);
+      final uri = Uri.tryParse(url);
+      if (uri == null) return;
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No se pudo abrir el enlace')),
+        );
+      }
     }
-  }
-
-  String _gsToHttps(String gsUrl) {
-    // gs://bucket/path/to/file -> https://firebasestorage.googleapis.com/v0/b/bucket/o/path%2Fto%2Ffile?alt=media
-    const prefix = 'gs://';
-    if (!gsUrl.startsWith(prefix)) return gsUrl;
-    final withoutScheme = gsUrl.substring(prefix.length);
-    final firstSlash = withoutScheme.indexOf('/');
-    if (firstSlash == -1) return gsUrl;
-    final bucket = withoutScheme.substring(0, firstSlash);
-    final path = withoutScheme.substring(firstSlash + 1);
-    final encodedPath = Uri.encodeComponent(path);
-    return 'https://firebasestorage.googleapis.com/v0/b/$bucket/o/$encodedPath?alt=media';
   }
 
   String _format(Duration d) {

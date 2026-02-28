@@ -35,19 +35,49 @@ class SongsListScreen extends ConsumerWidget {
           );
         }
         return ListView.builder(
+          padding: const EdgeInsets.all(16),
           itemCount: songs.length,
           itemBuilder: (context, index) {
             final song = songs[index];
-            return ListTile(
-              title: Text(song.title),
-              subtitle: Text(song.tone ?? ''),
-              onTap: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => SongDetailScreen(song: song, voice: voice),
+            return Card(
+              margin: const EdgeInsets.only(bottom: 12),
+              child: ListTile(
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 8,
+                ),
+                leading: CircleAvatar(
+                  backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                  child: Icon(
+                    Icons.music_note,
+                    color: Theme.of(context).colorScheme.onPrimaryContainer,
                   ),
-                );
-              },
+                ),
+                title: Text(
+                  song.title,
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
+                subtitle: song.tone != null
+                    ? Text(
+                        'Tono: ${song.tone}',
+                        style: TextStyle(
+                          color: Theme.of(context)
+                              .colorScheme
+                              .onSurface
+                              .withOpacity(0.7),
+                        ),
+                      )
+                    : null,
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) =>
+                          SongDetailScreen(song: song, voice: voice),
+                    ),
+                  );
+                },
+              ),
             );
           },
         );
