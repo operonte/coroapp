@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/models/song.dart';
 
@@ -68,6 +69,16 @@ class _SongDetailScreenState extends State<SongDetailScreen> {
         _error = 'No se pudo cargar el audio.';
         _loading = false;
       });
+    }
+  }
+
+  Future<void> _openUrl(String? rawUrl) async {
+    if (rawUrl == null || rawUrl.isEmpty) return;
+    final url = rawUrl.startsWith('gs://') ? _gsToHttps(rawUrl) : rawUrl;
+    final uri = Uri.tryParse(url);
+    if (uri == null) return;
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
     }
   }
 
@@ -162,10 +173,47 @@ class _SongDetailScreenState extends State<SongDetailScreen> {
               ),
             const SizedBox(height: 24),
             if (song.lyricsUrl != null)
-              Text('Letra (PDF): ${song.lyricsUrl}'),
-            const SizedBox(height: 16),
-            if (song.demoVideoUrl != null)
-              Text('Demo video: ${song.demoVideoUrl}'),
+              InkWell(
+                onTap: () => _openUrl(song.lyricsUrl),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.description_outlined),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Abrir letra (PDF)',
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.primary,
+                          decoration: TextDecoration.underline,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            if (song.demoVideoUrl != null) ...[
+              const SizedBox(height: 8),
+              InkWell(
+                onTap: () => _openUrl(song.demoVideoUrl),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.play_circle_outline),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Ver demo (video)',
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.primary,
+                          decoration: TextDecoration.underline,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
       ),
