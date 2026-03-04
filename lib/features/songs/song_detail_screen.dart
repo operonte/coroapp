@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:just_audio_background/just_audio_background.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../core/constants/track_types.dart';
 import '../../core/models/song.dart';
+import '../../core/providers.dart';
 import '../../core/services/storage_url_service.dart';
 import '../../screens/pdf_viewer_screen.dart';
 
-class SongDetailScreen extends StatefulWidget {
+class SongDetailScreen extends ConsumerStatefulWidget {
   const SongDetailScreen({
     super.key,
     required this.song,
@@ -18,10 +21,10 @@ class SongDetailScreen extends StatefulWidget {
   final String voice;
 
   @override
-  State<SongDetailScreen> createState() => _SongDetailScreenState();
+  ConsumerState<SongDetailScreen> createState() => _SongDetailScreenState();
 }
 
-class _SongDetailScreenState extends State<SongDetailScreen> {
+class _SongDetailScreenState extends ConsumerState<SongDetailScreen> {
   late final AudioPlayer _player;
   bool _loading = true;
   String? _error;
@@ -169,6 +172,67 @@ class _SongDetailScreenState extends State<SongDetailScreen> {
     return '$minutes:$seconds';
   }
 
+  /// Construye la lista de opciones de pistas: solo las que tienen URL, y demo siempre.
+  List<Widget> _buildTrackOptions({
+    required Song song,
+    required bool isAdmin,
+    required String currentVoice,
+  }) {
+    final list = <Widget>[];
+    for (final key in allTrackKeys) {
+      // Usuarios normales: solo su voz + demo. El jefe ve todas las pistas.
+      if (!isAdmin &&
+          key != currentVoice &&
+          key != kDemoTrackKey) {
+        continue;
+      }
+
+      final url = key == kDemoTrackKey
+          ? (song.audioUrls[kDemoTrackKey] ?? song.demoVideoUrl)
+          : song.audioUrls[key];
+      final label = trackKeyToLabel(key);
+      if (key == kDemoTrackKey) {
+        // Demo siempre visible
+        if (url != null && url.isNotEmpty) {
+          list.add(
+            _MediaOption(
+              icon: Icons.play_circle_outline,
+              title: label,
+              onOpen: () => _openInExternalApp(url),
+            ),
+          );
+        } else {
+          list.add(
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              child: Row(
+                children: [
+                  Icon(Icons.play_circle_outline, size: 24, color: Theme.of(context).colorScheme.outline),
+                  const SizedBox(width: 12),
+                  Text(
+                    '$label (vacío)',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                        ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+      } else if (url != null && url.isNotEmpty) {
+        list.add(
+          _MediaOption(
+            icon: Icons.music_note,
+            title: label,
+            onOpen: () => _openInExternalApp(url),
+          ),
+        );
+      }
+    }
+    return list;
+  }
+
   @override
   void dispose() {
     _player.dispose();
@@ -179,6 +243,9 @@ class _SongDetailScreenState extends State<SongDetailScreen> {
   Widget build(BuildContext context) {
     final song = widget.song;
     final voice = widget.voice;
+    final appUserAsync = ref.watch(currentAppUserProvider);
+    final appUser = appUserAsync.value;
+    final isAdmin = appUser?.role == 'admin_coro';
 
     return Scaffold(
       appBar: AppBar(
@@ -261,21 +328,53 @@ class _SongDetailScreenState extends State<SongDetailScreen> {
                 ],
               ),
             const SizedBox(height: 24),
+            _SectionTitle(title: 'Pistas'),
+            ..._buildTrackOptions(
+              song: song,
+              isAdmin: isAdmin,
+              currentVoice: voice,
+            ),
+            const SizedBox(height: 16),
+            _SectionTitle(title: 'Letra'),
             if (song.lyricsUrl != null)
               _MediaOption(
                 icon: Icons.description_outlined,
                 title: 'Letra (PDF)',
                 onOpen: () => _openInExternalApp(song.lyricsUrl),
                 onViewInApp: () => _viewPdfInApp(song.lyricsUrl!, song.title),
-              ),
-            if (song.demoVideoUrl != null)
-              _MediaOption(
-                icon: Icons.play_circle_outline,
-                title: 'Demo (video)',
-                onOpen: () => _openInExternalApp(song.demoVideoUrl),
+              )
+            else
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: Text(
+                  'Sin letra',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                      ),
+                ),
               ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _SectionTitle extends StatelessWidget {
+  const _SectionTitle({required this.title});
+
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(0, 8, 0, 8),
+      child: Text(
+        title,
+        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+              color: Theme.of(context).colorScheme.primary,
+              fontWeight: FontWeight.w600,
+            ),
       ),
     );
   }

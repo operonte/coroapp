@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/providers.dart';
 import '../settings/settings_screen.dart';
+import '../songs/create_song_screen.dart';
 import '../songs/songs_list_screen.dart';
 
 class HomeShell extends ConsumerWidget {
@@ -53,6 +54,19 @@ class HomeShell extends ConsumerWidget {
             choirId: user.choirId!,
             voice: user.voice!,
           ),
+          floatingActionButton: user.role == 'admin_coro'
+              ? FloatingActionButton(
+                  tooltip: 'Nueva canción',
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => CreateSongScreen(choirId: user.choirId!),
+                      ),
+                    );
+                  },
+                  child: const Icon(Icons.add),
+                )
+              : null,
         );
       },
     );

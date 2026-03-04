@@ -36,6 +36,16 @@ Las URLs en Firestore (`lyricsUrl`, `audioUrls`) pueden ser:
 
 Asegúrate de que el archivo exista en Storage en la ruta indicada.
 
+## Crear grupos (coros)
+
+Para añadir los grupos **grupo_evenezer**, **cuarteto_bendicion** y **grupo_dogma** en Firestore:
+
+```bash
+flutter run -t lib/seed_choirs_main.dart
+```
+
+(O manualmente según [docs/choirs_seed.md](docs/choirs_seed.md).)
+
 ## Configuración de jefe de grupo
 
 Para que los miembros puedan convertirse en jefe de grupo, añade el campo `leaderPassword` al documento del coro en Firestore (colección `choirs`):

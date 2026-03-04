@@ -13,7 +13,7 @@ class AppUser {
   final String displayName;
   final String email;
   final String? photoUrl;
-  final String role; // 'super_admin' | 'admin_coro' | 'miembro'
+  final String role; // 'admin_coro' | 'miembro'
   final String? choirId;
   final String? voice; // 'tenor' | 'bajo' | 'contralto' | 'soprano' | etc.
 
