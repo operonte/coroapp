@@ -9,6 +9,7 @@ import '../../core/models/song.dart';
 import '../../core/providers.dart';
 import '../../core/services/storage_url_service.dart';
 import '../../screens/pdf_viewer_screen.dart';
+import 'create_song_screen.dart';
 
 class SongDetailScreen extends ConsumerStatefulWidget {
   const SongDetailScreen({
@@ -250,6 +251,23 @@ class _SongDetailScreenState extends ConsumerState<SongDetailScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(song.title),
+        actions: [
+          if (isAdmin)
+            IconButton(
+              icon: const Icon(Icons.edit_outlined),
+              tooltip: 'Editar canción',
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => CreateSongScreen(
+                      choirId: song.choirId,
+                      song: song,
+                    ),
+                  ),
+                );
+              },
+            ),
+        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(16),
