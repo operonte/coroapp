@@ -6,15 +6,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/constants/track_types.dart';
+import '../../core/models/song.dart';
 import '../../core/providers.dart';
 
 class CreateSongScreen extends ConsumerStatefulWidget {
   const CreateSongScreen({
     super.key,
     required this.choirId,
+    this.song,
   });
 
   final String choirId;
+  final Song? song;
 
   @override
   ConsumerState<CreateSongScreen> createState() => _CreateSongScreenState();
@@ -31,6 +34,32 @@ class _CreateSongScreenState extends ConsumerState<CreateSongScreen> {
   String? _lyricsFilePath;
   bool _saving = false;
   String? _error;
+  bool _isEditing = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _isEditing = widget.song != null;
+    if (_isEditing) {
+      _loadExistingSongData();
+    }
+  }
+
+  void _loadExistingSongData() {
+    final song = widget.song!;
+    _titleController.text = song.title;
+    _authorController.text = song.author ?? '';
+    _toneController.text = song.tone ?? '';
+    _selectedVoices.addAll(song.voicesAvailable);
+    
+    // Cargar rutas existentes de archivos (solo para referencia)
+    for (final entry in song.audioUrls.entries) {
+      _trackFiles[entry.key] = entry.value; // Guardamos la URL existente
+    }
+    if (song.lyricsUrl != null) {
+      _lyricsFilePath = song.lyricsUrl; // Guardamos la URL existente
+    }
+  }
 
   @override
   void dispose() {
@@ -94,16 +123,30 @@ class _CreateSongScreenState extends ConsumerState<CreateSongScreen> {
 
     try {
       final songsRepo = ref.read(songsRepositoryProvider);
-      final songId = songsRepo.generateSongId();
+      final songId = _isEditing ? widget.song!.id : songsRepo.generateSongId();
       final basePath = 'coroapp/choirs/${widget.choirId}/songs/$songId';
 
       final Map<String, String> audioUrls = {};
       String? lyricsUrl;
       String? demoVideoUrl;
 
+      // Para edición: mantener URLs existentes si no se reemplazan
+      final Map<String, String> existingAudioUrls = _isEditing ? widget.song!.audioUrls : {};
+      final String? existingLyricsUrl = _isEditing ? widget.song!.lyricsUrl : null;
+
       for (final entry in _trackFiles.entries) {
         final trackKey = entry.key;
         final path = entry.value;
+        
+        // Si es una URL existente y no se seleccionó nuevo archivo, mantenerla
+        if (_isEditing && existingAudioUrls.containsKey(trackKey) && 
+            (path.startsWith('gs://') || path.startsWith('coroapp/') || path.startsWith('https://'))) {
+          audioUrls[trackKey] = path; // Mantener URL existente
+          if (trackKey == kDemoTrackKey) demoVideoUrl = path;
+          continue;
+        }
+        
+        // Nuevo archivo seleccionado: subirlo
         final ext = path.split('.').last;
         final storagePath = '$basePath/$trackKey.$ext';
         final fullPath = await _uploadFile(path, storagePath);
@@ -111,36 +154,57 @@ class _CreateSongScreenState extends ConsumerState<CreateSongScreen> {
         if (trackKey == kDemoTrackKey) demoVideoUrl = fullPath;
       }
 
+      // Manejo de la letra
       if (_lyricsFilePath != null) {
-        final ext = _lyricsFilePath!.split('.').last.toLowerCase();
-        if (ext != kLyricsExtension) {
-          setState(() {
-            _error = 'La letra debe ser un archivo PDF';
-            _saving = false;
-          });
-          return;
+        // Si es una URL existente y no se seleccionó nuevo archivo, mantenerla
+        if (_isEditing && existingLyricsUrl != null && 
+            (_lyricsFilePath!.startsWith('gs://') || _lyricsFilePath!.startsWith('coroapp/') || _lyricsFilePath!.startsWith('https://'))) {
+          lyricsUrl = _lyricsFilePath; // Mantener URL existente
+        } else {
+          // Nuevo archivo seleccionado: subirlo
+          final ext = _lyricsFilePath!.split('.').last.toLowerCase();
+          if (ext != kLyricsExtension) {
+            setState(() {
+              _error = 'La letra debe ser un archivo PDF';
+              _saving = false;
+            });
+            return;
+          }
+          lyricsUrl = await _uploadFile(
+            _lyricsFilePath!,
+            '$basePath/letra.$kLyricsExtension',
+          );
         }
-        lyricsUrl = await _uploadFile(
-          _lyricsFilePath!,
-          '$basePath/letra.$kLyricsExtension',
+      }
+
+      if (_isEditing) {
+        await songsRepo.updateSong(
+          songId: songId,
+          title: title,
+          author: _authorController.text.trim().isEmpty ? null : _authorController.text.trim(),
+          tone: _toneController.text.trim().isEmpty ? null : _toneController.text.trim(),
+          voicesAvailable: _selectedVoices.toList(),
+          audioUrls: audioUrls,
+          lyricsUrl: lyricsUrl,
+          demoVideoUrl: demoVideoUrl,
+        );
+      } else {
+        await songsRepo.createSong(
+          songId: songId,
+          choirId: widget.choirId,
+          title: title,
+          author: _authorController.text.trim().isEmpty ? null : _authorController.text.trim(),
+          tone: _toneController.text.trim().isEmpty ? null : _toneController.text.trim(),
+          voicesAvailable: _selectedVoices.toList(),
+          audioUrls: audioUrls,
+          lyricsUrl: lyricsUrl,
+          demoVideoUrl: demoVideoUrl,
         );
       }
 
-      await songsRepo.createSong(
-        songId: songId,
-        choirId: widget.choirId,
-        title: title,
-        author: _authorController.text.trim().isEmpty ? null : _authorController.text.trim(),
-        tone: _toneController.text.trim().isEmpty ? null : _toneController.text.trim(),
-        voicesAvailable: _selectedVoices.toList(),
-        audioUrls: audioUrls,
-        lyricsUrl: lyricsUrl,
-        demoVideoUrl: demoVideoUrl,
-      );
-
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Canción creada')),
+          SnackBar(content: Text(_isEditing ? 'Canción actualizada' : 'Canción creada')),
         );
         Navigator.of(context).pop(true);
       }
@@ -158,7 +222,7 @@ class _CreateSongScreenState extends ConsumerState<CreateSongScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Nueva canción'),
+        title: Text(_isEditing ? 'Editar canción' : 'Nueva canción'),
       ),
       body: Form(
         key: _formKey,
@@ -218,6 +282,8 @@ class _CreateSongScreenState extends ConsumerState<CreateSongScreen> {
             const SizedBox(height: 8),
             ...allTrackKeys.map((key) {
               final path = _trackFiles[key];
+              final isExistingUrl = _isEditing && path != null && 
+                  (path.startsWith('gs://') || path.startsWith('coroapp/') || path.startsWith('https://'));
               return Padding(
                 padding: const EdgeInsets.only(bottom: 8),
                 child: Row(
@@ -231,15 +297,34 @@ class _CreateSongScreenState extends ConsumerState<CreateSongScreen> {
                         path != null ? path.split('/').last : '—',
                         style: TextStyle(
                           fontSize: 12,
-                          color: path != null ? null : Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+                          color: path != null 
+                              ? (isExistingUrl ? Colors.blue : null)
+                              : Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
                         ),
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
+                    if (isExistingUrl)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          'Actual',
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: Colors.blue,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    const SizedBox(width: 8),
                     TextButton.icon(
                       onPressed: _saving ? null : () => _pickTrackFile(key),
                       icon: const Icon(Icons.upload_file, size: 18),
-                      label: Text(path != null ? 'Cambiar' : 'Subir'),
+                      label: Text(isExistingUrl ? 'Reemplazar' : (path != null ? 'Cambiar' : 'Subir')),
                     ),
                   ],
                 ),
@@ -248,24 +333,49 @@ class _CreateSongScreenState extends ConsumerState<CreateSongScreen> {
             const SizedBox(height: 16),
             const Text('Letra (solo PDF)', style: TextStyle(fontWeight: FontWeight.w600)),
             const SizedBox(height: 8),
-            Row(
+            Builder(
+              builder: (context) {
+                final isExistingLyricsUrl = _isEditing && _lyricsFilePath != null && 
+                    (_lyricsFilePath!.startsWith('gs://') || _lyricsFilePath!.startsWith('coroapp/') || _lyricsFilePath!.startsWith('https://'));
+                return Row(
               children: [
                 Expanded(
                   child: Text(
                     _lyricsFilePath != null ? _lyricsFilePath!.split('/').last : '—',
                     style: TextStyle(
                       fontSize: 12,
-                      color: _lyricsFilePath != null ? null : Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+                      color: _lyricsFilePath != null 
+                          ? (isExistingLyricsUrl ? Colors.blue : null)
+                          : Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
                     ),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
+                if (isExistingLyricsUrl)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      'Actual',
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: Colors.blue,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                const SizedBox(width: 8),
                 TextButton.icon(
                   onPressed: _saving ? null : _pickLyricsFile,
                   icon: const Icon(Icons.upload_file, size: 18),
-                  label: Text(_lyricsFilePath != null ? 'Cambiar' : 'Subir PDF'),
+                  label: Text(isExistingLyricsUrl ? 'Reemplazar' : (_lyricsFilePath != null ? 'Cambiar' : 'Subir PDF')),
                 ),
               ],
+            );
+              },
             ),
             if (_error != null) ...[
               const SizedBox(height: 16),
@@ -280,7 +390,7 @@ class _CreateSongScreenState extends ConsumerState<CreateSongScreen> {
                       height: 24,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : const Text('Crear canción'),
+                  : Text(_isEditing ? 'Actualizar canción' : 'Crear canción'),
             ),
           ],
         ),

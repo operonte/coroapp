@@ -51,5 +51,32 @@ class SongsRepository {
       'demoVideoUrl': demoVideoUrl,
     });
   }
+
+  /// Actualiza una canción existente en Firestore.
+  Future<void> updateSong({
+    required String songId,
+    required String title,
+    String? author,
+    String? tone,
+    required List<String> voicesAvailable,
+    required Map<String, String> audioUrls,
+    String? lyricsUrl,
+    String? demoVideoUrl,
+  }) async {
+    await _songsCol.doc(songId).update({
+      'title': title,
+      'author': author,
+      'tone': tone,
+      'voicesAvailable': voicesAvailable,
+      'audioUrls': audioUrls,
+      'lyricsUrl': lyricsUrl,
+      'demoVideoUrl': demoVideoUrl,
+    });
+  }
+
+  /// Elimina una canción de Firestore.
+  Future<void> deleteSong(String songId) async {
+    await _songsCol.doc(songId).delete();
+  }
 }
 
