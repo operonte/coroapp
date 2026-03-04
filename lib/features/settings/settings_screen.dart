@@ -277,10 +277,11 @@ class _LeaderPasswordScreenState extends ConsumerState<LeaderPasswordScreen> {
       });
 
       if (mounted) {
+        ref.invalidate(currentAppUserProvider);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('¡Ahora eres jefe de grupo!')),
+          const SnackBar(content: Text('¡Ahora eres jefe de grupo! Vuelve a la lista de canciones para ver el botón +')),
         );
-        Navigator.of(context).pop();
+        Navigator.of(context).popUntil((route) => route.isFirst);
       }
     } catch (e) {
       setState(() {

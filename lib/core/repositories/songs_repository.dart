@@ -24,5 +24,32 @@ class SongsRepository {
               .toList(),
         );
   }
+
+  /// Genera un ID libre para una nueva canción (para usar en rutas de Storage).
+  String generateSongId() => _songsCol.doc().id;
+
+  /// Crea un documento de canción en Firestore.
+  Future<void> createSong({
+    required String songId,
+    required String choirId,
+    required String title,
+    String? author,
+    String? tone,
+    required List<String> voicesAvailable,
+    required Map<String, String> audioUrls,
+    String? lyricsUrl,
+    String? demoVideoUrl,
+  }) async {
+    await _songsCol.doc(songId).set({
+      'choirId': choirId,
+      'title': title,
+      'author': author,
+      'tone': tone,
+      'voicesAvailable': voicesAvailable,
+      'audioUrls': audioUrls,
+      'lyricsUrl': lyricsUrl,
+      'demoVideoUrl': demoVideoUrl,
+    });
+  }
 }
 
