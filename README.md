@@ -10,7 +10,7 @@ Aplicación Flutter para organización de repertorio de coros cristianos, con:
 ## Descarga de la APK
 
 ### 📱 Para Usuarios Finales
-- [Descargar CoroApp v0.1.8.1 (Última versión para usuarios)](https://github.com/operonte/coroapp/releases/download/v0.1.8.1/coroapp_v0.1.8_colores_corregidos.apk)
+- [Descargar CoroApp v0.1.11 (Última versión con recordatorios y sugerencias)](https://github.com/operonte/coroapp/releases/download/v0.1.11/coroapp_v0.1.11_recordatorios_sugerencias.apk)
 
 ### 📱 Para Google Play Console
 - **App Bundle para producción**: [Descargar v0.1.9 (App Bundle firmado)](https://github.com/operonte/coroapp/releases/download/v0.1.9/coroapp_v0.1.9_signed.aab)
@@ -43,6 +43,24 @@ CoroApp está **100% preparada para Google Play Store** con todos los requisitos
 - **Gestión completa**: Crear, editar, organizar canciones
 - **Reproducción**: Pistas individuales por voz
 - **Autenticación**: Cuenta Google segura con Firebase
+- **🆕 Recordatorios**: Sistema de recordatorios para el grupo
+- **🆕 Sugerencias**: Canal de comunicación con el desarrollador
+
+### 🆕 Novedades v0.1.11
+#### 📋 Recordatorios
+- **Solo jefes pueden crear**: Control de acceso por rol
+- **Visibles para todos**: Todo el grupo puede ver los recordatorios
+- **Vencimiento automático**: Se eliminan solos en la fecha indicada
+- **Prioridades**: Alta, media, baja
+- **Acceso directo**: Botón en pantalla principal
+
+#### 💬 Sugerencias y Comentarios
+- **Comunicación directa**: Envía mensajes al desarrollador
+- **Categorización**: Bugs, mejoras, nuevas funciones
+- **Seguimiento**: Estado de tus sugerencias (pendiente, revisión, respondido)
+- **Calificación**: Evalúa la app con estrellas
+- **Adjuntar imágenes**: Capturas de pantalla para mejor descripción
+- **Acceso fácil**: En Configuración → Sugerencias y Comentarios
 
 ### 📊 Alcance
 - **Disponibilidad**: Mundial

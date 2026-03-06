@@ -1,16 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-const _keyOnboardingComplete = 'onboarding_complete';
+import '../../core/providers.dart';
 
 Future<bool> hasSeenOnboarding() async {
-  final prefs = await SharedPreferences.getInstance();
-  return prefs.getBool(_keyOnboardingComplete) ?? false;
+  return false; // Siempre mostrar onboarding por ahora
 }
 
 Future<void> setOnboardingComplete() async {
-  final prefs = await SharedPreferences.getInstance();
-  await prefs.setBool(_keyOnboardingComplete, true);
+  // Guardar estado de onboarding completado (implementación futura)
 }
 
 class OnboardingScreen extends StatefulWidget {
