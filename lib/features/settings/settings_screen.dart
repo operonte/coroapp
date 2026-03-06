@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../core/constants/track_types.dart';
 import '../../core/providers.dart';
 import '../onboarding/onboarding_screen.dart';
 import '../profile/profile_setup_screen.dart';
@@ -50,8 +51,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final appUserAsync = ref.watch(currentAppUserProvider);
+    final appUser = appUserAsync.value;
+    
     return Scaffold(
       appBar: AppBar(
+        backgroundColor: getAppBarColor(appUser?.voice ?? ''),
         title: const Text('Configuración'),
       ),
       body: ListView(

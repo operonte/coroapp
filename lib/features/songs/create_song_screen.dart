@@ -220,8 +220,12 @@ class _CreateSongScreenState extends ConsumerState<CreateSongScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final appUserAsync = ref.watch(currentAppUserProvider);
+    final appUser = appUserAsync.value;
+    
     return Scaffold(
       appBar: AppBar(
+        backgroundColor: getAppBarColor(appUser?.voice ?? ''),
         title: Text(_isEditing ? 'Editar canción' : 'Nueva canción'),
       ),
       body: Form(
