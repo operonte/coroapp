@@ -63,9 +63,9 @@ String trackKeyToLabel(String key) {
 Color getAppBarColor(String voice) {
   switch (voice) {
     case 'primera_voz':
-      return const Color(0xFF03A9F4); // Celeste
+      return const Color(0xFF00BCD4); // Cyan/Azul claro (diferente al tenor)
     case 'tenor':
-      return const Color(0xFF2196F3); // Azul actual
+      return const Color(0xFF2196F3); // Azul original de la app
     case 'bajo':
       return const Color(0xFF795548); // Café
     case 'contralto':

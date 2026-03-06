@@ -42,6 +42,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
 
         return Scaffold(
           appBar: AppBar(
+            backgroundColor: getAppBarColor(_selectedVoice ?? ''),
             title: const Text('Configurar perfil'),
           ),
           body: Padding(
