@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/constants/track_types.dart';
 import '../../core/providers.dart';
 
 class ProfileSetupScreen extends ConsumerStatefulWidget {
@@ -16,7 +17,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
   String? _selectedVoice;
   bool _saving = false;
 
-  final _voices = const ['tenor', 'bajo', 'contralto', 'soprano'];
+  final _voices = const ['primera_voz', 'tenor', 'bajo', 'contralto', 'soprano'];
 
   @override
   Widget build(BuildContext context) {
@@ -68,7 +69,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
                   children: _voices.map((voice) {
                     final selected = _selectedVoice == voice;
                     return ChoiceChip(
-                      label: Text(voice),
+                      label: Text(trackKeyToLabel(voice)),
                       selected: selected,
                       onSelected: (_) {
                         setState(() {

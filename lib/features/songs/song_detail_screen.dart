@@ -250,6 +250,7 @@ class _SongDetailScreenState extends ConsumerState<SongDetailScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        backgroundColor: getAppBarColor(voice),
         title: Text(song.title),
         actions: [
           if (isAdmin)

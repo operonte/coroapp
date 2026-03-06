@@ -15,7 +15,7 @@ class AppUser {
   final String? photoUrl;
   final String role; // 'admin_coro' | 'miembro'
   final String? choirId;
-  final String? voice; // 'tenor' | 'bajo' | 'contralto' | 'soprano' | etc.
+  final String? voice; // 'primera_voz' | 'tenor' | 'bajo' | 'contralto' | 'soprano' | etc.
 
   factory AppUser.fromMap(String id, Map<String, dynamic> data) {
     return AppUser(
