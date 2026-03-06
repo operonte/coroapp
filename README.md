@@ -17,6 +17,47 @@ Puedes descargar la APK más reciente desde:
 - [v0.1.7 - 5 Voces + Colores Dinámicos](https://github.com/operonte/coroapp/releases/download/v0.1.7/coroapp_v0.1.7_5voces_colores.apk)
 - [v0.1.6 - Edición de Canciones](https://github.com/operonte/coroapp/releases/download/v0.1.6/coroapp_v0.1.6_final.apk)
 
+## 📱 Google Play Store
+
+CoroApp está preparada para publicación en Google Play Store con:
+
+### ✅ Requisitos Cumplidos
+- **Compatibilidad**: Android 5.0+ (API 21+) hasta Android 14 (API 34)
+- **Categorías**: Music & Audio + Productivity
+- **Contenido**: Para mayores de edad, contenido religioso
+- **Monetización**: Gratuita, sin anuncios ni compras internas
+- **Políticas**: Privacidad y Términos de Servicio disponibles
+
+### 📋 Documentación Legal
+- **Política de Privacidad**: [Ver documento](https://operonte.github.io/releases/coroapp/policies/privacy_policy.html)
+- **Términos de Servicio**: [Ver documento](https://operonte.github.io/releases/coroapp/policies/terms_of_service.html)
+- **Data Security**: Configurado según requerimientos de Google
+
+### 🎯 Características Principales
+- **5 tipos de voz**: Primera voz, tenor, bajo, contralto, soprano
+- **Colores dinámicos**: AppBar personalizada por tipo de voz
+- **Gestión completa**: Crear, editar, organizar canciones
+- **Reproducción**: Pistas individuales por voz
+- **Autenticación**: Cuenta Google segura
+
+### 📊 Alcance
+- **Disponibilidad**: Mundial
+- **Idiomas**: Español (con expansión futura)
+- **Testing**: Disponible para pruebas cerradas
+
+### 🚀 Próxima Versión
+La versión **v0.1.9** está preparada para Google Play Store con:
+- **App Bundle (.aab)** optimizado para Play Store
+- **Target SDK 34** (Android 14) cumplimiento 2024
+- **Firma digital**: Lista para producción
+- **Metadatos completos**: Content rating y seguridad
+
+### 📱 Para Testers
+Contacta con **cristian.bravo.droguett@gmail.com** para acceso a:
+- **Closed Testing** (pruebas controladas)
+- **Feedback y reporte de bugs**
+- **Validación previa al lanzamiento
+
 ## Firebase Storage: reglas y formato de URLs
 
 Para que los PDFs y audios se carguen correctamente, las **reglas de Firebase Storage** deben permitir lectura a usuarios autenticados:
