@@ -22,6 +22,15 @@ android {
         jvmTarget = JavaVersion.VERSION_17.toString()
     }
 
+    signingConfigs {
+        create("release") {
+            storeFile = file("../../android/app/coroapp-release-key.jks")
+            storePassword = "CoroApp2024!"
+            keyAlias = "coroapp-key"
+            keyPassword = "CoroApp2024!"
+        }
+    }
+
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId = "com.operonte.coroapp.coroapp"
@@ -35,9 +44,8 @@ android {
 
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            // Configuración de firma para producción
+            signingConfig = signingConfigs.getByName("release")
         }
     }
 }
