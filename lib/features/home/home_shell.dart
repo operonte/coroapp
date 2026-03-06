@@ -6,6 +6,7 @@ import '../../core/providers.dart';
 import '../settings/settings_screen.dart';
 import '../songs/create_song_screen.dart';
 import '../songs/songs_list_screen.dart';
+import '../reminders/reminder_screen.dart';
 
 class HomeShell extends ConsumerWidget {
   const HomeShell({super.key});
@@ -39,6 +40,17 @@ class HomeShell extends ConsumerWidget {
             backgroundColor: getAppBarColor(user.voice ?? ''),
             title: Text('CoroApp · ${(user.voice ?? '').toUpperCase()}'),
             actions: [
+              IconButton(
+                icon: const Icon(Icons.notifications_outlined),
+                tooltip: 'Recordatorios',
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => const ReminderScreen(),
+                    ),
+                  );
+                },
+              ),
               IconButton(
                 icon: const Icon(Icons.settings_outlined),
                 tooltip: 'Configuración',

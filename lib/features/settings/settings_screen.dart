@@ -8,6 +8,7 @@ import '../../core/providers.dart';
 import '../onboarding/onboarding_screen.dart';
 import '../profile/profile_setup_screen.dart';
 import '../../screens/privacy_policy_screen.dart';
+import '../suggestions/suggestions_screen.dart';
 
 const _privacyPolicyUrl =
     'https://operonte.github.io/releases/coroapp/policies/privacy_policy.html';
@@ -61,6 +62,20 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       ),
       body: ListView(
         children: [
+          _SectionTitle(title: 'Comunicación'),
+          ListTile(
+            leading: const Icon(Icons.chat_outlined),
+            title: const Text('Sugerencias y Comentarios'),
+            subtitle: const Text('Envía tus ideas al desarrollador'),
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => const SuggestionsScreen(),
+                ),
+              );
+            },
+          ),
+          const Divider(),
           _SectionTitle(title: 'Información'),
           ListTile(
             leading: const Icon(Icons.info_outline),
