@@ -9,9 +9,13 @@ Aplicación Flutter para organización de repertorio de coros cristianos, con:
 
 ## Descarga de la APK
 
-Puedes descargar la APK de release desde:
+Puedes descargar la APK más reciente desde:
 
-- [Descargar APK de CoroApp](https://github.com/operonte/coroapp/releases/download/v0.1.5/app-release.apk)
+- [Descargar CoroApp v0.1.8 (Última versión)](https://github.com/operonte/coroapp/releases/download/v0.1.8/coroapp_v0.1.8_colores_corregidos.apk)
+
+### Versiones Anteriores
+- [v0.1.7 - 5 Voces + Colores Dinámicos](https://github.com/operonte/coroapp/releases/download/v0.1.7/coroapp_v0.1.7_5voces_colores.apk)
+- [v0.1.6 - Edición de Canciones](https://github.com/operonte/coroapp/releases/download/v0.1.6/coroapp_v0.1.6_final.apk)
 
 ## Firebase Storage: reglas y formato de URLs
 
