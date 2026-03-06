@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/constants/track_types.dart';
 import '../../core/providers.dart';
 import '../settings/settings_screen.dart';
 import '../songs/create_song_screen.dart';
@@ -35,6 +36,7 @@ class HomeShell extends ConsumerWidget {
 
         return Scaffold(
           appBar: AppBar(
+            backgroundColor: getAppBarColor(user.voice ?? ''),
             title: Text('CoroApp · ${(user.voice ?? '').toUpperCase()}'),
             actions: [
               IconButton(

@@ -40,7 +40,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     {
       'icon': Icons.people_rounded,
       'title': 'Elige tu coro y voz',
-      'subtitle': 'Selecciona tu coro e indica tu tipo de voz: tenor, bajo, contralto o soprano.',
+      'subtitle': 'Selecciona tu coro e indica tu tipo de voz: primera voz, tenor, bajo, contralto o soprano.',
     },
     {
       'icon': Icons.play_circle_outline_rounded,

@@ -3,7 +3,7 @@
 Aplicación Flutter para organización de repertorio de coros cristianos, con:
 
 - Autenticación con Google.
-- Gestión de coros y tipos de voz (tenor, bajo, contralto, soprano).
+- Gestión de coros y tipos de voz (primera voz, tenor, bajo, contralto, soprano).
 - Listado de canciones filtradas por coro y voz.
 - Reproducción de pistas individuales por voz (pendiente de mejorar el reproductor).
 

@@ -1,9 +1,12 @@
+import 'package:flutter/material.dart';
+
 // Tipos de pista: voces, instrumentos y demo.
 // Las voces e instrumentos solo se muestran si la canción los usa.
 // La pista "demo" siempre se muestra (para fomentar completarla).
 
-/// Claves de las 4 voces.
+/// Claves de las 5 voces.
 const List<String> kVoiceTrackKeys = [
+  'primera_voz',
   'tenor',
   'bajo',
   'contralto',
@@ -16,7 +19,6 @@ const List<String> kInstrumentTrackKeys = [
   'guitarra',
   'bajo_instrumental',
   'teclado',
-  'primera_voz',
 ];
 
 /// Clave de la pista demo. Siempre visible.
@@ -32,6 +34,8 @@ List<String> get allTrackKeys => [
 /// Etiqueta visible para cada clave de pista.
 String trackKeyToLabel(String key) {
   switch (key) {
+    case 'primera_voz':
+      return 'Primera voz';
     case 'tenor':
       return 'Tenor';
     case 'bajo':
@@ -48,12 +52,28 @@ String trackKeyToLabel(String key) {
       return 'Bajo (instrumento)';
     case 'teclado':
       return 'Teclado';
-    case 'primera_voz':
-      return 'Primera voz';
     case 'demo':
       return 'Demo';
     default:
       return key;
+  }
+}
+
+/// Color de AppBar para cada tipo de voz.
+Color getAppBarColor(String voice) {
+  switch (voice) {
+    case 'primera_voz':
+      return const Color(0xFF03A9F4); // Celeste
+    case 'tenor':
+      return const Color(0xFF2196F3); // Azul actual
+    case 'bajo':
+      return const Color(0xFF795548); // Café
+    case 'contralto':
+      return const Color(0xFFCE93D8); // Morado claro
+    case 'soprano':
+      return const Color(0xFFF48FB1); // Rosado
+    default:
+      return const Color(0xFF2196F3); // Azul por defecto
   }
 }
 
