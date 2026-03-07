@@ -9,9 +9,40 @@ Aplicación Flutter para organización de repertorio de coros cristianos, con:
 
 ## Descarga de la APK
 
-Puedes descargar la APK de release desde:
+### 📱 Para Usuarios Finales
+- [Descargar CoroApp v0.1.7 (Versión original funcional)](https://github.com/operonte/coroapp/releases/download/v0.1.7/coroapp_v0.1.7_original.apk)
 
-- [Descargar APK de CoroApp](https://github.com/operonte/coroapp/releases/download/v0.1.5/app-release.apk)
+### 📱 Para Google Play Console
+- **App Bundle para producción**: [Descargar v0.1.9 (App Bundle firmado)](https://github.com/operonte/coroapp/releases/download/v0.1.9/coroapp_v0.1.9_signed.aab)
+
+### Versiones Anteriores
+- [v0.1.6 - Edición de Canciones](https://github.com/operonte/coroapp/releases/download/v0.1.6/coroapp_v0.1.6_final.apk)
+
+## 📱 Google Play Store
+
+### 🚀 Versión Actual para Google Play Store
+La versión **v0.1.9** está lista para publicación con:
+- **App Bundle (.aab)**: `coroapp_v0.1.9_signed.aab` (49.3 MB) - Firmado digitalmente
+- **Target SDK 34** (Android 14): Cumple requisitos Google 2024
+- **Firma digital**: Válida por 10 años (hasta 2053-07-22)
+
+### 📊 Alcance
+- **Disponibilidad**: Mundial
+- **Idioma**: Español (con expansión futura)
+- **Testing**: Disponible para pruebas cerradas
+
+### 🔐 Privacidad y Seguridad
+- **Política de Privacidad**: [Ver documento](https://operonte.github.io/releases/coroapp/policies/privacy_policy.html)
+- **Términos de Servicio**: [Ver documento](https://operonte.github.io/releases/coroapp/policies/terms_of_service.html)
+- **Data Security**: Configurado según requerimientos de Google
+- **Firma Digital**: Válida por 10 años (hasta 2053-07-22)
+
+### 🎯 Características Principales
+- **5 tipos de voz**: Primera voz, tenor, bajo, contralto, soprano
+- **Colores dinámicos**: AppBar personalizada por tipo de voz
+- **Gestión completa**: Crear, editar, organizar canciones
+- **Reproducción**: Pistas individuales por voz
+- **Autenticación**: Cuenta Google segura con Firebase
 
 ## Firebase Storage: reglas y formato de URLs
 
