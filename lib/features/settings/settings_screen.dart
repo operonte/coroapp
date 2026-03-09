@@ -3,9 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../core/constants/track_types.dart';
 import '../../core/providers.dart';
 import '../onboarding/onboarding_screen.dart';
 import '../profile/profile_setup_screen.dart';
+import '../events/events_screen.dart';
 import '../../screens/privacy_policy_screen.dart';
 
 const _privacyPolicyUrl =
@@ -50,10 +52,20 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Configuración'),
+    final appUserAsync = ref.watch(currentAppUserProvider);
+    
+    return appUserAsync.when(
+      loading: () => const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
       ),
+      error: (e, _) => Scaffold(
+        body: Center(child: Text('Error: $e')),
+      ),
+      data: (user) => Scaffold(
+        appBar: AppBar(
+          backgroundColor: getAppBarColor(user?.voice ?? ''),
+          title: const Text('Configuración'),
+        ),
       body: ListView(
         children: [
           _SectionTitle(title: 'Información'),
@@ -69,13 +81,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             leading: const Icon(Icons.privacy_tip_outlined),
             title: const Text('Política de privacidad'),
             trailing: const Icon(Icons.open_in_new),
-            onTap: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => const PrivacyPolicyScreen(),
-                ),
-              );
-            },
+            onTap: () => _openUrl(_privacyPolicyUrl),
           ),
           ListTile(
             leading: const Icon(Icons.description_outlined),
@@ -85,6 +91,18 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ),
           const Divider(),
           _SectionTitle(title: 'Perfil'),
+          ListTile(
+            leading: const Icon(Icons.event_outlined),
+            title: const Text('Eventos'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => const EventsScreen(),
+                ),
+              );
+            },
+          ),
           ListTile(
             leading: const Icon(Icons.person_outline),
             title: const Text('Cambiar voz y coro'),
@@ -110,24 +128,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             },
           ),
           const Divider(),
-          _SectionTitle(title: 'Ayuda'),
-          ListTile(
-            leading: const Icon(Icons.school_outlined),
-            title: const Text('Tutorial'),
-            subtitle: const Text('Ver guía de bienvenida'),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => OnboardingScreen(
-                    isTutorial: true,
-                    onComplete: () => Navigator.of(context).pop(),
-                  ),
-                ),
-              );
-            },
-          ),
-          const Divider(),
+          _SectionTitle(title: 'Cuenta'),
           ListTile(
             leading: Icon(
               Icons.logout,
@@ -143,6 +144,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             onTap: () => _signOut(context),
           ),
         ],
+      ),
       ),
     );
   }

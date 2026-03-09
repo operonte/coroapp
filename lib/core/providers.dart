@@ -6,6 +6,7 @@ import 'models/app_user.dart';
 import 'repositories/auth_repository.dart';
 import 'repositories/user_repository.dart';
 import 'repositories/songs_repository.dart';
+import 'repositories/events_repository.dart';
 
 final firebaseAuthProvider =
     Provider<FirebaseAuth>((ref) => FirebaseAuth.instance);
@@ -30,6 +31,10 @@ final userRepositoryProvider = Provider<UserRepository>((ref) {
 
 final songsRepositoryProvider = Provider<SongsRepository>((ref) {
   return SongsRepository(ref.watch(firestoreProvider));
+});
+
+final eventsRepositoryProvider = Provider<EventsRepository>((ref) {
+  return EventsRepository(ref.watch(firestoreProvider));
 });
 
 final authStateProvider = StreamProvider<User?>((ref) {

@@ -25,6 +25,17 @@ class SongsRepository {
         );
   }
 
+  Stream<List<Song>> watchAllSongsForChoir(String choirId) {
+    return _songsCol
+        .where('choirId', isEqualTo: choirId)
+        .snapshots()
+        .map(
+          (snap) => snap.docs
+              .map((d) => Song.fromMap(d.id, d.data()))
+              .toList(),
+        );
+  }
+
   /// Genera un ID libre para una nueva canción (para usar en rutas de Storage).
   String generateSongId() => _songsCol.doc().id;
 
