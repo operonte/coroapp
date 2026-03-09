@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/constants/track_types.dart';
 import '../../core/providers.dart';
+import '../events/events_screen.dart';
 import '../settings/settings_screen.dart';
 import '../songs/create_song_screen.dart';
 import '../songs/songs_list_screen.dart';
@@ -39,6 +40,17 @@ class HomeShell extends ConsumerWidget {
             backgroundColor: getAppBarColor(user.voice ?? ''),
             title: Text('CoroApp · ${(user.voice ?? '').toUpperCase()}'),
             actions: [
+              IconButton(
+                icon: const Icon(Icons.event_outlined),
+                tooltip: 'Eventos',
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => const EventsScreen(),
+                    ),
+                  );
+                },
+              ),
               IconButton(
                 icon: const Icon(Icons.settings_outlined),
                 tooltip: 'Configuración',
