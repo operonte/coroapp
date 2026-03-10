@@ -42,8 +42,14 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
 
   void _setupPlayerListener() {
     _player.playerStateStream.listen((state) {
-      if (state.playing == false && state.processingState == ProcessingState.completed) {
-        if (mounted) {
+      if (mounted) {
+        // Actualizar estado de reproducción
+        setState(() {
+          _isPlaying = state.playing;
+        });
+        
+        // Cuando una canción termina, avanzar a la siguiente
+        if (state.playing == false && state.processingState == ProcessingState.completed) {
           _playNext();
         }
       }
@@ -193,27 +199,30 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
   }
 
   Future<void> _playNext() async {
+    if (_playlistSongs.isEmpty) return;
+    
     if (_currentSongIndex < _playlistSongs.length - 1) {
+      // Avanzar a siguiente canción
       setState(() {
         _currentSongIndex++;
-        _retryCount = 0; // Resetear contador de reintentos
+        _retryCount = 0;
       });
       await _playSong(_playlistSongs[_currentSongIndex]);
     } else {
       // Fin de la playlist
       if (_isPlayingAll) {
-        // Si está en modo "Escuchar Todo", reiniciar desde el principio
+        // Modo "Escuchar Todo": reiniciar desde el principio
         setState(() {
           _currentSongIndex = 0;
           _retryCount = 0;
         });
         await _playSong(_playlistSongs[_currentSongIndex]);
       } else {
-        // Modo normal, mostrar mensaje de completado
+        // Modo normal: detener reproducción
+        setState(() {
+          _isPlaying = false;
+        });
         if (mounted) {
-          setState(() {
-            _isPlaying = false;
-          });
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('🎵 Playlist completada'),
