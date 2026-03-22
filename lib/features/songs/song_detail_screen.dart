@@ -213,7 +213,7 @@ class _SongDetailScreenState extends ConsumerState<SongDetailScreen> {
                   Text(
                     '$label (vacío)',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
                         ),
                   ),
                 ],
@@ -368,7 +368,7 @@ class _SongDetailScreenState extends ConsumerState<SongDetailScreen> {
                 child: Text(
                   'Sin letra',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
                       ),
                 ),
               ),
@@ -430,7 +430,7 @@ class _MediaOption extends StatelessWidget {
                       ? 'Ver en la app o abrir con otra'
                       : 'Abrir con app externa',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
                       ),
                 ),
               ],

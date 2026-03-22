@@ -84,7 +84,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         color: Theme.of(context)
                             .colorScheme
                             .onSurface
-                            .withOpacity(0.7),
+                            .withValues(alpha: 0.7),
                       ),
                 ),
                 const SizedBox(height: 48),
@@ -95,7 +95,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       color: Theme.of(context)
                           .colorScheme
                           .errorContainer
-                          .withOpacity(0.5),
+                          .withValues(alpha: 0.5),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
