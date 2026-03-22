@@ -299,7 +299,7 @@ class _CreateSongScreenState extends ConsumerState<CreateSongScreen> {
                           fontSize: 12,
                           color: path != null 
                               ? (isExistingUrl ? Colors.blue : null)
-                              : Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+                              : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
                         ),
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -308,7 +308,7 @@ class _CreateSongScreenState extends ConsumerState<CreateSongScreen> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                         decoration: BoxDecoration(
-                          color: Colors.blue.withOpacity(0.1),
+                          color: Colors.blue.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
@@ -346,7 +346,7 @@ class _CreateSongScreenState extends ConsumerState<CreateSongScreen> {
                       fontSize: 12,
                       color: _lyricsFilePath != null 
                           ? (isExistingLyricsUrl ? Colors.blue : null)
-                          : Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+                          : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
                     ),
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -355,7 +355,7 @@ class _CreateSongScreenState extends ConsumerState<CreateSongScreen> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                     decoration: BoxDecoration(
-                      color: Colors.blue.withOpacity(0.1),
+                      color: Colors.blue.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(

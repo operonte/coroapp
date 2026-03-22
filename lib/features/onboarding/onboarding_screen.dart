@@ -110,7 +110,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                                 color: Theme.of(context)
                                     .colorScheme
                                     .onSurface
-                                    .withOpacity(0.8),
+                                    .withValues(alpha: 0.8),
                               ),
                           textAlign: TextAlign.center,
                         ),
@@ -131,7 +131,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   decoration: BoxDecoration(
                     color: _currentPage == i
                         ? Theme.of(context).colorScheme.primary
-                        : Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                        : Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
                     borderRadius: BorderRadius.circular(4),
                   ),
                 ),
