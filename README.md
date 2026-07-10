@@ -33,8 +33,7 @@ La versión **v0.1.9** está lista para publicación con:
 - **Testing**: Disponible para pruebas cerradas
 
 ### 🔐 Privacidad y Seguridad
-- **Política de Privacidad**: [Ver documento](https://operonte.github.io/releases/coroapp/policies/privacy_policy.html)
-- **Términos de Servicio**: [Ver documento](https://operonte.github.io/releases/coroapp/policies/terms_of_service.html)
+- **Política de Privacidad**: [Ver documento](https://cristianbravo-dev.web.app/privacy/coroapp)
 - **Data Security**: Configurado según requerimientos de Google
 - **Firma Digital**: Válida por 10 años (hasta 2053-07-22)
 

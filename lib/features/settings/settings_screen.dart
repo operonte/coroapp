@@ -10,8 +10,7 @@ import '../profile/profile_setup_screen.dart';
 import '../events/events_screen.dart';
 import '../../screens/privacy_policy_screen.dart';
 
-const _privacyPolicyUrl =
-    'https://operonte.github.io/releases/coroapp/policies/privacy_policy.html';
+const _privacyPolicyUrl = 'https://cristianbravo-dev.web.app/privacy/coroapp';
 const _termsOfUseUrl =
     'https://operonte.github.io/releases/coroapp/policies/terms_of_use.html';
 
