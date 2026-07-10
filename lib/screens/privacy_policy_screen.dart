@@ -12,7 +12,7 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> {
   late final WebViewController _controller;
 
   static const String _privacyPolicyUrl =
-      'https://operonte.github.io/releases/coroapp/policies/privacy_policy.html';
+      'https://cristianbravo-dev.web.app/privacy/coroapp';
 
   @override
   void initState() {
