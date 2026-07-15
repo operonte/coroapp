@@ -35,13 +35,10 @@ class EventsScreen extends ConsumerWidget {
             backgroundColor: getAppBarColor(user.voice ?? ''),
             title: const Text('Eventos'),
           ),
-          body: StreamBuilder<List<Event>>(
-            stream: ref.watch(eventsRepositoryProvider).watchEventsForChoir(user.choirId!),
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
-              }
-              final events = snapshot.data ?? [];
+          body: ref.watch(eventsStreamProvider(user.choirId!)).when(
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (e, _) => Center(child: Text('Error: $e')),
+            data: (events) {
               if (events.isEmpty) {
                 return const Center(
                   child: Text('No hay eventos programados'),

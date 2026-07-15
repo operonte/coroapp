@@ -5,10 +5,8 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/constants/track_types.dart';
 import '../../core/providers.dart';
-import '../onboarding/onboarding_screen.dart';
 import '../profile/profile_setup_screen.dart';
 import '../events/events_screen.dart';
-import '../../screens/privacy_policy_screen.dart';
 
 const _privacyPolicyUrl = 'https://cristianbravo-dev.web.app/privacy/coroapp';
 const _termsOfUseUrl =

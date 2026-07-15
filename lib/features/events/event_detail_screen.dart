@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:just_audio/just_audio.dart';
@@ -11,10 +12,7 @@ import '../../core/services/storage_url_service.dart';
 import 'create_event_screen.dart';
 
 class EventDetailScreen extends ConsumerStatefulWidget {
-  const EventDetailScreen({
-    super.key,
-    required this.event,
-  });
+  const EventDetailScreen({super.key, required this.event});
 
   final Event event;
 
@@ -23,7 +21,11 @@ class EventDetailScreen extends ConsumerStatefulWidget {
 }
 
 class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
-  late final AudioPlayer _player;
+  AudioPlayer get _player => ref.read(globalAudioPlayerProvider);
+
+  StreamSubscription<PlayerState>? _playerStateSubscription;
+  StreamSubscription<Duration>? _positionSubscription;
+
   bool _loading = true;
   String? _error;
   int _currentSongIndex = 0;
@@ -35,21 +37,21 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
   @override
   void initState() {
     super.initState();
-    _player = AudioPlayer();
     _setupPlayerListener();
     _loadPlaylistSongs();
   }
 
   void _setupPlayerListener() {
-    _player.playerStateStream.listen((state) {
-      if (state.playing == false && state.processingState == ProcessingState.completed) {
+    _playerStateSubscription = _player.playerStateStream.listen((state) {
+      if (state.playing == false &&
+          state.processingState == ProcessingState.completed) {
         if (mounted) {
           _playNext();
         }
       }
     });
 
-    _player.positionStream.listen((position) {
+    _positionSubscription = _player.positionStream.listen((position) {
       if (mounted) {
         setState(() {});
       }
@@ -58,7 +60,8 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
 
   @override
   void dispose() {
-    _player.dispose();
+    _playerStateSubscription?.cancel();
+    _positionSubscription?.cancel();
     super.dispose();
   }
 
@@ -73,12 +76,12 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
     try {
       final songsRepo = ref.read(songsRepositoryProvider);
       final stream = songsRepo.watchAllSongsForChoir(widget.event.choirId);
-      
+
       stream.listen((songs) {
-        final playlistSongs = songs.where((song) => 
-          widget.event.playlist.contains(song.id)
-        ).toList();
-        
+        final playlistSongs = songs
+            .where((song) => widget.event.playlist.contains(song.id))
+            .toList();
+
         if (mounted) {
           setState(() {
             _playlistSongs = playlistSongs;
@@ -106,7 +109,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
 
       final userVoice = appUser.voice ?? '';
       final gsUrl = song.audioUrls[userVoice];
-      
+
       if (gsUrl == null || gsUrl.isEmpty) {
         _handleError('Sin pista para tu voz', shouldSkip: true);
         return;
@@ -119,27 +122,30 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
       });
 
       await _attemptPlayback(gsUrl, song, userVoice);
-      
     } catch (e) {
       _handleError('Error inesperado: $e', shouldSkip: true);
     }
   }
 
-  Future<void> _attemptPlayback(String gsUrl, Song song, String userVoice) async {
+  Future<void> _attemptPlayback(
+    String gsUrl,
+    Song song,
+    String userVoice,
+  ) async {
     try {
       final url = await resolveStorageUrl(gsUrl);
       await _player.setAudioSource(
         AudioSource.uri(
           Uri.parse(url),
           tag: MediaItem(
-            id: '${song.id}_${userVoice}',
+            id: '${song.id}_$userVoice',
             title: song.title,
             album: song.author ?? 'CoroApp',
           ),
         ),
       );
       await _player.play();
-      
+
       if (mounted) {
         setState(() {
           _loading = false;
@@ -148,13 +154,13 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
       }
     } catch (e) {
       _retryCount++;
-      
+
       if (_retryCount <= 3) {
         // Reintentar hasta 3 veces
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Reintentando (${_retryCount}/3)...'),
+              content: Text('Reintentando ($_retryCount/3)...'),
               duration: const Duration(seconds: 1),
             ),
           );
@@ -162,7 +168,10 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
         await Future.delayed(Duration(seconds: _retryCount));
         await _attemptPlayback(gsUrl, song, userVoice);
       } else {
-        _handleError('No se pudo cargar después de 3 intentos', shouldSkip: true);
+        _handleError(
+          'No se pudo cargar después de 3 intentos',
+          shouldSkip: true,
+        );
       }
     }
   }
@@ -176,10 +185,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(message),
-          duration: const Duration(seconds: 2),
-        ),
+        SnackBar(content: Text(message), duration: const Duration(seconds: 2)),
       );
 
       if (shouldSkip) {
@@ -242,7 +248,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
     });
 
     await _playSong(_playlistSongs[_currentSongIndex]);
-    
+
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -328,12 +334,9 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
     final isAdmin = appUserAsync.value?.role == 'admin_coro';
 
     return appUserAsync.when(
-      loading: () => const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      ),
-      error: (e, _) => Scaffold(
-        body: Center(child: Text('Error: $e')),
-      ),
+      loading: () =>
+          const Scaffold(body: Center(child: CircularProgressIndicator())),
+      error: (e, _) => Scaffold(body: Center(child: Text('Error: $e'))),
       data: (user) => Scaffold(
         appBar: AppBar(
           backgroundColor: getAppBarColor(user?.voice ?? ''),
@@ -397,9 +400,11 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                 FilledButton.icon(
                   onPressed: _playlistSongs.isEmpty ? null : _togglePlayAll,
                   icon: Icon(_isPlayingAll ? Icons.stop : Icons.repeat),
-                  label: Text(_isPlayingAll ? 'Detener reproducción' : 'Escuchar Todo'),
+                  label: Text(
+                    _isPlayingAll ? 'Detener reproducción' : 'Escuchar Todo',
+                  ),
                   style: FilledButton.styleFrom(
-                    backgroundColor: _isPlayingAll 
+                    backgroundColor: _isPlayingAll
                         ? Theme.of(context).colorScheme.error
                         : Theme.of(context).colorScheme.primary,
                     foregroundColor: _isPlayingAll
@@ -413,7 +418,9 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                 else if (_error != null)
                   Text(
                     _error!,
-                    style: TextStyle(color: Theme.of(context).colorScheme.error),
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.error,
+                    ),
                   )
                 else if (_playlistSongs.isEmpty)
                   const Text('No se encontraron las canciones de la playlist')
@@ -427,10 +434,15 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                           children: [
                             Text(
                               _playlistSongs[_currentSongIndex].title,
-                              style: const TextStyle(fontWeight: FontWeight.w600),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                              ),
                               textAlign: TextAlign.center,
                             ),
-                            if (_playlistSongs[_currentSongIndex].author?.isNotEmpty == true)
+                            if (_playlistSongs[_currentSongIndex]
+                                    .author
+                                    ?.isNotEmpty ==
+                                true)
                               Text(
                                 _playlistSongs[_currentSongIndex].author!,
                                 style: Theme.of(context).textTheme.bodySmall,
@@ -444,7 +456,9 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                                   value: position.inMilliseconds.toDouble(),
                                   max: 300000, // 5 minutos máximo como fallback
                                   onChanged: (value) {
-                                    _player.seek(Duration(milliseconds: value.round()));
+                                    _player.seek(
+                                      Duration(milliseconds: value.round()),
+                                    );
                                   },
                                 );
                               },
@@ -453,15 +467,23 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 IconButton(
-                                  onPressed: _currentSongIndex > 0 ? _playPrevious : null,
+                                  onPressed: _currentSongIndex > 0
+                                      ? _playPrevious
+                                      : null,
                                   icon: const Icon(Icons.skip_previous),
                                 ),
                                 IconButton(
                                   onPressed: _togglePlayPause,
-                                  icon: Icon(_isPlaying ? Icons.pause : Icons.play_arrow),
+                                  icon: Icon(
+                                    _isPlaying ? Icons.pause : Icons.play_arrow,
+                                  ),
                                 ),
                                 IconButton(
-                                  onPressed: _currentSongIndex < _playlistSongs.length - 1 ? _playNext : null,
+                                  onPressed:
+                                      _currentSongIndex <
+                                          _playlistSongs.length - 1
+                                      ? _playNext
+                                      : null,
                                   icon: const Icon(Icons.skip_next),
                                 ),
                               ],
@@ -480,31 +502,35 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                         final song = _playlistSongs[index];
                         final isCurrentSong = index == _currentSongIndex;
                         return Card(
-                          color: isCurrentSong 
+                          color: isCurrentSong
                               ? Theme.of(context).colorScheme.primaryContainer
                               : null,
                           child: ListTile(
                             leading: CircleAvatar(
-                              backgroundColor: isCurrentSong 
+                              backgroundColor: isCurrentSong
                                   ? Theme.of(context).colorScheme.primary
-                                  : Theme.of(context).colorScheme.surfaceContainerHighest,
+                                  : Theme.of(
+                                      context,
+                                    ).colorScheme.surfaceContainerHighest,
                               child: Text(
                                 '${index + 1}',
                                 style: TextStyle(
-                                  color: isCurrentSong 
+                                  color: isCurrentSong
                                       ? Theme.of(context).colorScheme.onPrimary
-                                      : Theme.of(context).colorScheme.onSurfaceVariant,
+                                      : Theme.of(
+                                          context,
+                                        ).colorScheme.onSurfaceVariant,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
                             ),
                             title: Text(
                               song.title,
-                              style: isCurrentSong 
+                              style: isCurrentSong
                                   ? const TextStyle(fontWeight: FontWeight.bold)
                                   : null,
                             ),
-                            subtitle: song.author?.isNotEmpty == true 
+                            subtitle: song.author?.isNotEmpty == true
                                 ? Text(song.author!)
                                 : null,
                             trailing: isCurrentSong && _isPlaying

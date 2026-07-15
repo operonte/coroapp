@@ -46,5 +46,16 @@ class UserRepository {
       return AppUser.fromMap(doc.id, doc.data()!);
     });
   }
+
+  Future<void> updateProfile({
+    required String uid,
+    required String choirId,
+    required String voice,
+  }) async {
+    await _usersCol.doc(uid).update({
+      'choirId': choirId,
+      'voice': voice,
+    });
+  }
 }
 
