@@ -24,7 +24,6 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
   AudioPlayer get _player => ref.read(globalAudioPlayerProvider);
 
   StreamSubscription<PlayerState>? _playerStateSubscription;
-  StreamSubscription<Duration>? _positionSubscription;
 
   bool _loading = true;
   String? _error;
@@ -32,7 +31,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
   int _retryCount = 0;
   List<Song> _playlistSongs = [];
   bool _isPlaying = false;
-  bool _isPlayingAll = false; // Nuevo estado para "Escuchar Todo"
+  bool _isPlayingAll = false;
 
   @override
   void initState() {
@@ -43,17 +42,19 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
 
   void _setupPlayerListener() {
     _playerStateSubscription = _player.playerStateStream.listen((state) {
-      if (state.playing == false &&
-          state.processingState == ProcessingState.completed) {
-        if (mounted) {
-          _playNext();
-        }
-      }
-    });
+      if (!mounted) return;
 
-    _positionSubscription = _player.positionStream.listen((position) {
+      // Sincronizar el estado visual de reproducción
       if (mounted) {
-        setState(() {});
+        setState(() {
+          _isPlaying = state.playing;
+        });
+      }
+
+      // Avanzar a la siguiente canción al completar
+      if (!state.playing &&
+          state.processingState == ProcessingState.completed) {
+        _playNext();
       }
     });
   }
@@ -61,15 +62,12 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
   @override
   void dispose() {
     _playerStateSubscription?.cancel();
-    _positionSubscription?.cancel();
     super.dispose();
   }
 
   Future<void> _loadPlaylistSongs() async {
     if (!widget.event.hasPlaylist) {
-      setState(() {
-        _loading = false;
-      });
+      setState(() => _loading = false);
       return;
     }
 
@@ -78,13 +76,16 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
       final stream = songsRepo.watchAllSongsForChoir(widget.event.choirId);
 
       stream.listen((songs) {
-        final playlistSongs = songs
-            .where((song) => widget.event.playlist.contains(song.id))
+        // BUGFIX: Preservar el orden definido en event.playlist
+        final songMap = {for (final s in songs) s.id: s};
+        final ordered = widget.event.playlist
+            .map((id) => songMap[id])
+            .whereType<Song>()
             .toList();
 
         if (mounted) {
           setState(() {
-            _playlistSongs = playlistSongs;
+            _playlistSongs = ordered;
             _loading = false;
           });
         }
@@ -156,7 +157,6 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
       _retryCount++;
 
       if (_retryCount <= 3) {
-        // Reintentar hasta 3 veces
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -190,32 +190,31 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
 
       if (shouldSkip) {
         Future.delayed(const Duration(seconds: 1), () {
-          if (mounted) {
-            _playNext();
-          }
+          if (mounted) _playNext();
         });
       }
     }
   }
 
   Future<void> _playNext() async {
+    if (_playlistSongs.isEmpty) return;
+
     if (_currentSongIndex < _playlistSongs.length - 1) {
       setState(() {
         _currentSongIndex++;
-        _retryCount = 0; // Resetear contador de reintentos
+        _retryCount = 0;
       });
       await _playSong(_playlistSongs[_currentSongIndex]);
     } else {
       // Fin de la playlist
       if (_isPlayingAll) {
-        // Si está en modo "Escuchar Todo", reiniciar desde el principio
+        // Reiniciar desde el principio en modo "Escuchar Todo"
         setState(() {
           _currentSongIndex = 0;
           _retryCount = 0;
         });
         await _playSong(_playlistSongs[_currentSongIndex]);
       } else {
-        // Modo normal, mostrar mensaje de completado
         if (mounted) {
           setState(() {
             _isPlaying = false;
@@ -233,11 +232,9 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
 
   Future<void> _playAll() async {
     if (_playlistSongs.isEmpty) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('No hay canciones en la playlist')),
-        );
-      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No hay canciones en la playlist')),
+      );
       return;
     }
 
@@ -247,7 +244,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
       _isPlayingAll = true;
     });
 
-    await _playSong(_playlistSongs[_currentSongIndex]);
+    await _playSong(_playlistSongs[0]);
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -266,45 +263,23 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
         _isPlaying = false;
         _isPlayingAll = false;
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('⏹️ Reproducción detenida'),
-          duration: Duration(seconds: 2),
-        ),
-      );
     }
   }
 
-  Future<void> _startPlaylist() async {
-    if (_playlistSongs.isEmpty) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('No hay canciones en la playlist')),
-        );
-      }
-      return;
-    }
-
-    setState(() {
-      _currentSongIndex = 0;
-      _retryCount = 0;
-    });
-
-    await _playSong(_playlistSongs[_currentSongIndex]);
-  }
-
+  // BUGFIX: separar toggle de play/pause correctamente
   Future<void> _togglePlayPause() async {
     if (_player.playing) {
+      // Pausar
       await _player.pause();
-      if (mounted) {
-        setState(() {
-          _isPlaying = false;
-        });
-      }
+      if (mounted) setState(() => _isPlaying = false);
     } else {
-      if (_playlistSongs.isEmpty) {
-        await _startPlaylist();
+      // BUGFIX: si ya hay una fuente cargada, reanudar en lugar de reiniciar
+      if (_player.audioSource != null &&
+          _player.processingState != ProcessingState.idle) {
+        await _player.play();
+        if (mounted) setState(() => _isPlaying = true);
       } else {
+        // Sin fuente cargada: iniciar desde el índice actual
         await _playSong(_playlistSongs[_currentSongIndex]);
       }
     }
@@ -322,7 +297,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
     if (_currentSongIndex > 0) {
       setState(() {
         _currentSongIndex--;
-        _retryCount = 0; // Resetear contador de reintentos
+        _retryCount = 0;
       });
       await _playSong(_playlistSongs[_currentSongIndex]);
     }
@@ -392,13 +367,17 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
               if (widget.event.hasPlaylist) ...[
                 const SizedBox(height: 24),
                 Text(
-                  'Playlist de práctica (${widget.event.playlist.length} canciones)',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                  'Playlist de práctica (${_playlistSongs.length} canciones)',
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
                 const SizedBox(height: 16),
-                // Botón "Escuchar Todo"
+                // Botón principal: Escuchar Todo / Detener
                 FilledButton.icon(
-                  onPressed: _playlistSongs.isEmpty ? null : _togglePlayAll,
+                  onPressed:
+                      _playlistSongs.isEmpty ? null : _togglePlayAll,
                   icon: Icon(_isPlayingAll ? Icons.stop : Icons.repeat),
                   label: Text(
                     _isPlayingAll ? 'Detener reproducción' : 'Escuchar Todo',
@@ -426,74 +405,119 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                   const Text('No se encontraron las canciones de la playlist')
                 else ...[
                   // Reproductor actual
-                  if (_playlistSongs.isNotEmpty) ...[
-                    Card(
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          children: [
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        children: [
+                          Text(
+                            _playlistSongs[_currentSongIndex].title,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w600,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          if (_playlistSongs[_currentSongIndex]
+                                  .author
+                                  ?.isNotEmpty ==
+                              true)
                             Text(
-                              _playlistSongs[_currentSongIndex].title,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w600,
+                              _playlistSongs[_currentSongIndex].author!,
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                          const SizedBox(height: 16),
+                          // BUGFIX: Slider con duración real del audio
+                          StreamBuilder<Duration?>(
+                            stream: _player.durationStream,
+                            builder: (context, durationSnapshot) {
+                              final totalDuration =
+                                  durationSnapshot.data ?? Duration.zero;
+                              return StreamBuilder<Duration>(
+                                stream: _player.positionStream,
+                                builder: (context, posSnapshot) {
+                                  final position =
+                                      posSnapshot.data ?? Duration.zero;
+                                  final maxMs = totalDuration.inMilliseconds
+                                      .toDouble()
+                                      .clamp(1.0, double.infinity);
+                                  final posMs = position.inMilliseconds
+                                      .toDouble()
+                                      .clamp(0.0, maxMs);
+                                  return Column(
+                                    children: [
+                                      Slider(
+                                        value: posMs,
+                                        max: maxMs,
+                                        onChanged: (value) {
+                                          _player.seek(
+                                            Duration(
+                                              milliseconds: value.round(),
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                      Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 8,
+                                        ),
+                                        child: Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            Text(
+                                              _formatDuration(position),
+                                              style: Theme.of(context)
+                                                  .textTheme
+                                                  .bodySmall,
+                                            ),
+                                            Text(
+                                              _formatDuration(totalDuration),
+                                              style: Theme.of(context)
+                                                  .textTheme
+                                                  .bodySmall,
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  );
+                                },
+                              );
+                            },
+                          ),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              IconButton(
+                                onPressed: _currentSongIndex > 0
+                                    ? _playPrevious
+                                    : null,
+                                icon: const Icon(Icons.skip_previous),
                               ),
-                              textAlign: TextAlign.center,
-                            ),
-                            if (_playlistSongs[_currentSongIndex]
-                                    .author
-                                    ?.isNotEmpty ==
-                                true)
-                              Text(
-                                _playlistSongs[_currentSongIndex].author!,
-                                style: Theme.of(context).textTheme.bodySmall,
+                              IconButton(
+                                iconSize: 40,
+                                onPressed: _togglePlayPause,
+                                icon: Icon(
+                                  _isPlaying
+                                      ? Icons.pause_circle_filled
+                                      : Icons.play_circle_filled,
+                                ),
                               ),
-                            const SizedBox(height: 16),
-                            StreamBuilder<Duration>(
-                              stream: _player.positionStream,
-                              builder: (context, snapshot) {
-                                final position = snapshot.data ?? Duration.zero;
-                                return Slider(
-                                  value: position.inMilliseconds.toDouble(),
-                                  max: 300000, // 5 minutos máximo como fallback
-                                  onChanged: (value) {
-                                    _player.seek(
-                                      Duration(milliseconds: value.round()),
-                                    );
-                                  },
-                                );
-                              },
-                            ),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                IconButton(
-                                  onPressed: _currentSongIndex > 0
-                                      ? _playPrevious
-                                      : null,
-                                  icon: const Icon(Icons.skip_previous),
-                                ),
-                                IconButton(
-                                  onPressed: _togglePlayPause,
-                                  icon: Icon(
-                                    _isPlaying ? Icons.pause : Icons.play_arrow,
-                                  ),
-                                ),
-                                IconButton(
-                                  onPressed:
-                                      _currentSongIndex <
-                                          _playlistSongs.length - 1
-                                      ? _playNext
-                                      : null,
-                                  icon: const Icon(Icons.skip_next),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
+                              IconButton(
+                                onPressed:
+                                    _currentSongIndex <
+                                        _playlistSongs.length - 1
+                                    ? _playNext
+                                    : null,
+                                icon: const Icon(Icons.skip_next),
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
                     ),
-                    const SizedBox(height: 16),
-                  ],
+                  ),
+                  const SizedBox(height: 16),
                   // Lista de canciones numeradas
                   Expanded(
                     child: ListView.builder(
@@ -503,23 +527,27 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                         final isCurrentSong = index == _currentSongIndex;
                         return Card(
                           color: isCurrentSong
-                              ? Theme.of(context).colorScheme.primaryContainer
+                              ? Theme.of(context)
+                                  .colorScheme
+                                  .primaryContainer
                               : null,
                           child: ListTile(
                             leading: CircleAvatar(
                               backgroundColor: isCurrentSong
                                   ? Theme.of(context).colorScheme.primary
-                                  : Theme.of(
-                                      context,
-                                    ).colorScheme.surfaceContainerHighest,
+                                  : Theme.of(context)
+                                      .colorScheme
+                                      .surfaceContainerHighest,
                               child: Text(
                                 '${index + 1}',
                                 style: TextStyle(
                                   color: isCurrentSong
-                                      ? Theme.of(context).colorScheme.onPrimary
-                                      : Theme.of(
-                                          context,
-                                        ).colorScheme.onSurfaceVariant,
+                                      ? Theme.of(context)
+                                          .colorScheme
+                                          .onPrimary
+                                      : Theme.of(context)
+                                          .colorScheme
+                                          .onSurfaceVariant,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
@@ -527,18 +555,21 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                             title: Text(
                               song.title,
                               style: isCurrentSong
-                                  ? const TextStyle(fontWeight: FontWeight.bold)
+                                  ? const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                    )
                                   : null,
                             ),
                             subtitle: song.author?.isNotEmpty == true
                                 ? Text(song.author!)
                                 : null,
                             trailing: isCurrentSong && _isPlaying
-                                ? const Icon(Icons.play_arrow)
-                                : null,
+                                ? const Icon(Icons.graphic_eq)
+                                : const Icon(Icons.play_arrow),
                             onTap: () {
                               setState(() {
                                 _currentSongIndex = index;
+                                _isPlayingAll = false;
                               });
                               _playSong(song);
                             },
@@ -559,6 +590,14 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
   }
 
   String _formatDateTime(DateTime dateTime) {
-    return '${dateTime.day}/${dateTime.month}/${dateTime.year} ${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
+    return '${dateTime.day}/${dateTime.month}/${dateTime.year} '
+        '${dateTime.hour.toString().padLeft(2, '0')}:'
+        '${dateTime.minute.toString().padLeft(2, '0')}';
+  }
+
+  String _formatDuration(Duration d) {
+    final minutes = d.inMinutes.remainder(60).toString().padLeft(2, '0');
+    final seconds = d.inSeconds.remainder(60).toString().padLeft(2, '0');
+    return '$minutes:$seconds';
   }
 }
