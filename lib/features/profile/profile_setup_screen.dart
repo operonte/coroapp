@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/constants/track_types.dart';
+import '../../core/models/choir.dart';
 import '../../core/providers.dart';
 
 class ProfileSetupScreen extends ConsumerStatefulWidget {
@@ -16,12 +17,14 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
   String? _selectedChoirId;
   String? _selectedVoice;
   bool _saving = false;
+  bool _initialized = false;
 
   final _voices = const ['primera_voz', 'tenor', 'bajo', 'contralto', 'soprano'];
 
   @override
   Widget build(BuildContext context) {
     final userAsync = ref.watch(currentAppUserProvider);
+    final choirsAsync = ref.watch(choirsStreamProvider);
 
     return userAsync.when(
       loading: () => const Scaffold(
@@ -37,8 +40,11 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
           );
         }
 
-        _selectedChoirId ??= appUser.choirId;
-        _selectedVoice ??= appUser.voice;
+        if (!_initialized) {
+          _selectedChoirId = appUser.choirId;
+          _selectedVoice = appUser.voice;
+          _initialized = true;
+        }
 
         return Scaffold(
           appBar: AppBar(
@@ -49,20 +55,46 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Coro ID'),
+                const Text(
+                  'Coro',
+                  style: TextStyle(fontWeight: FontWeight.w500, fontSize: 16),
+                ),
                 const SizedBox(height: 8),
-                TextField(
-                  controller: TextEditingController(
-                    text: _selectedChoirId ?? '',
-                  ),
-                  onChanged: (value) => _selectedChoirId = value.trim(),
-                  decoration: const InputDecoration(
-                    border: OutlineInputBorder(),
-                    hintText: 'Ej: coro_central_001',
-                  ),
+                choirsAsync.when(
+                  loading: () => const Center(child: CircularProgressIndicator()),
+                  error: (e, _) => Text('Error al cargar coros: $e'),
+                  data: (List<Choir> choirs) {
+                    final validChoirIds = choirs.map((c) => c.id).toList();
+                    final dropdownValue = validChoirIds.contains(_selectedChoirId)
+                        ? _selectedChoirId
+                        : null;
+
+                    return DropdownButtonFormField<String>(
+                      initialValue: dropdownValue,
+                      hint: const Text('Selecciona tu coro'),
+                      decoration: const InputDecoration(
+                        border: OutlineInputBorder(),
+                        contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      ),
+                      items: choirs.map((choir) {
+                        return DropdownMenuItem<String>(
+                          value: choir.id,
+                          child: Text(choir.name),
+                        );
+                      }).toList(),
+                      onChanged: (value) {
+                        setState(() {
+                          _selectedChoirId = value;
+                        });
+                      },
+                    );
+                  },
                 ),
                 const SizedBox(height: 24),
-                const Text('Voz'),
+                const Text(
+                  'Voz',
+                  style: TextStyle(fontWeight: FontWeight.w500, fontSize: 16),
+                ),
                 const SizedBox(height: 8),
                 Wrap(
                   spacing: 8,
@@ -86,9 +118,10 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
                     onPressed: _saving
                         ? null
                         : () async {
+                            final messenger = ScaffoldMessenger.of(context);
                             if (_selectedChoirId == null ||
                                 _selectedChoirId!.isEmpty) {
-                              ScaffoldMessenger.of(context).showSnackBar(
+                              messenger.showSnackBar(
                                 const SnackBar(
                                   content: Text('Debes indicar un coro'),
                                 ),
@@ -96,7 +129,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
                               return;
                             }
                             if (_selectedVoice == null) {
-                              ScaffoldMessenger.of(context).showSnackBar(
+                              messenger.showSnackBar(
                                 const SnackBar(
                                   content: Text('Debes seleccionar tu voz'),
                                 ),
@@ -106,13 +139,19 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
 
                             setState(() => _saving = true);
                             try {
-                              final usersCol = ref
-                                  .read(firestoreProvider)
-                                  .collection('users');
-                              await usersCol.doc(appUser.id).update({
-                                'choirId': _selectedChoirId,
-                                'voice': _selectedVoice,
-                              });
+                              await ref.read(userRepositoryProvider).updateProfile(
+                                    uid: appUser.id,
+                                    choirId: _selectedChoirId!,
+                                    voice: _selectedVoice!,
+                                  );
+                            } catch (e) {
+                              if (mounted) {
+                                messenger.showSnackBar(
+                                  SnackBar(
+                                    content: Text('Error al guardar: $e'),
+                                  ),
+                                );
+                              }
                             } finally {
                               if (mounted) {
                                 setState(() => _saving = false);
@@ -136,4 +175,3 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
     );
   }
 }
-

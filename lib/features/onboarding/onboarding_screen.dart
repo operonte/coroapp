@@ -144,12 +144,23 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 width: double.infinity,
                 child: FilledButton(
                   onPressed: () async {
-                    if (!widget.isTutorial) {
-                      await setOnboardingComplete();
+                    if (_currentPage < _pages.length - 1) {
+                      _pageController.nextPage(
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeInOut,
+                      );
+                    } else {
+                      if (!widget.isTutorial) {
+                        await setOnboardingComplete();
+                      }
+                      widget.onComplete();
                     }
-                    widget.onComplete();
                   },
-                  child: Text(widget.isTutorial ? 'Entendido' : 'Comenzar'),
+                  child: Text(
+                    _currentPage < _pages.length - 1
+                        ? 'Siguiente'
+                        : (widget.isTutorial ? 'Entendido' : 'Comenzar'),
+                  ),
                 ),
               ),
             ),

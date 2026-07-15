@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:just_audio/just_audio.dart';
@@ -8,6 +9,7 @@ import '../../core/constants/track_types.dart';
 import '../../core/models/song.dart';
 import '../../core/providers.dart';
 import '../../core/services/storage_url_service.dart';
+import '../../core/services/offline_audio_service.dart';
 import '../../screens/pdf_viewer_screen.dart';
 import 'create_song_screen.dart';
 
@@ -26,17 +28,24 @@ class SongDetailScreen extends ConsumerStatefulWidget {
 }
 
 class _SongDetailScreenState extends ConsumerState<SongDetailScreen> {
-  late final AudioPlayer _player;
+  AudioPlayer get _player => ref.read(globalAudioPlayerProvider);
+  
+  StreamSubscription<Duration>? _positionSubscription;
+  StreamSubscription<Duration?>? _durationSubscription;
+  StreamSubscription<PlayerState>? _stateSubscription;
+
   bool _loading = true;
   String? _error;
   Duration _position = Duration.zero;
   Duration _duration = Duration.zero;
   String? _resolvedAudioUrl;
 
+  bool _downloading = false;
+  double _downloadProgress = 0.0;
+
   @override
   void initState() {
     super.initState();
-    _player = AudioPlayer();
     _init();
   }
 
@@ -51,31 +60,73 @@ class _SongDetailScreenState extends ConsumerState<SongDetailScreen> {
     }
 
     try {
-      final url = await resolveStorageUrl(gsUrl);
-      if (mounted) setState(() => _resolvedAudioUrl = url);
-      await _player.setAudioSource(
-        AudioSource.uri(
-          Uri.parse(url),
-          tag: MediaItem(
-            id: '${widget.song.id}_${widget.voice}',
-            title: widget.song.title,
-            album: widget.song.author ?? 'CoroApp',
-          ),
-        ),
-      );
+      final offlineNotifier = ref.read(offlineAudioProvider.notifier);
+      await offlineNotifier.checkStatus(widget.song.id, widget.voice);
+      await offlineNotifier.checkPdfStatus(widget.song.id);
 
-      _player.positionStream.listen((pos) {
+      final seq = _player.sequenceState;
+      final currentSource = seq.currentSource;
+      final mediaItem = currentSource != null ? currentSource.tag as MediaItem? : null;
+      final targetId = '${widget.song.id}_${widget.voice}';
+
+      if (mediaItem?.id != targetId) {
+        setState(() => _loading = true);
+        final localPath = await offlineNotifier.getLocalFilePathIfCached(widget.song.id, widget.voice);
+        
+        if (localPath != null) {
+          await _player.setAudioSource(
+            AudioSource.file(
+              localPath,
+              tag: MediaItem(
+                id: targetId,
+                title: widget.song.title,
+                album: widget.song.author ?? 'CoroApp',
+              ),
+            ),
+          );
+          if (mounted) setState(() => _resolvedAudioUrl = localPath);
+        } else {
+          final url = await resolveStorageUrl(gsUrl);
+          if (mounted) setState(() => _resolvedAudioUrl = url);
+          await _player.setAudioSource(
+            AudioSource.uri(
+              Uri.parse(url),
+              tag: MediaItem(
+                id: targetId,
+                title: widget.song.title,
+                album: widget.song.author ?? 'CoroApp',
+              ),
+            ),
+          );
+        }
+      } else {
+        if (_player.audioSource is UriAudioSource) {
+          _resolvedAudioUrl = (_player.audioSource as UriAudioSource).uri.toString();
+        } else if (_player.audioSource is ProgressiveAudioSource) {
+          _resolvedAudioUrl = (_player.audioSource as ProgressiveAudioSource).tag.id;
+        }
+      }
+
+      _position = _player.position;
+      _duration = _player.duration ?? Duration.zero;
+
+      _positionSubscription = _player.positionStream.listen((pos) {
         if (!mounted) return;
         setState(() {
           _position = pos;
         });
       });
 
-      _player.durationStream.listen((dur) {
+      _durationSubscription = _player.durationStream.listen((dur) {
         if (!mounted || dur == null) return;
         setState(() {
           _duration = dur;
         });
+      });
+
+      _stateSubscription = _player.playerStateStream.listen((state) {
+        if (!mounted) return;
+        setState(() {});
       });
 
       setState(() {
@@ -96,7 +147,118 @@ class _SongDetailScreenState extends ConsumerState<SongDetailScreen> {
     }
   }
 
+  Future<void> _toggleDownload() async {
+    final offlineNotifier = ref.read(offlineAudioProvider.notifier);
+    final isDownloaded = offlineNotifier.isDownloaded(widget.song.id, widget.voice);
+
+    if (isDownloaded) {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Eliminar descargas'),
+          content: const Text('¿Estás seguro de que deseas eliminar los archivos de este canto de tu dispositivo?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: const Text('Cancelar'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(ctx).pop(true),
+              child: const Text('Eliminar'),
+            ),
+          ],
+        ),
+      );
+
+      if (confirmed == true) {
+        await offlineNotifier.deleteAudio(widget.song.id, widget.voice);
+        await offlineNotifier.deletePdf(widget.song.id);
+        final seq = _player.sequenceState;
+        final currentSource = seq.currentSource;
+        final mediaItem = currentSource != null ? currentSource.tag as MediaItem? : null;
+        if (mediaItem?.id == '${widget.song.id}_${widget.voice}') {
+          await _init();
+        }
+      }
+    } else {
+      setState(() {
+        _downloading = true;
+        _downloadProgress = 0.0;
+      });
+
+      try {
+        // Download audio first (80% of progress)
+        await offlineNotifier.downloadAudio(
+          song: widget.song,
+          voice: widget.voice,
+          onProgress: (progress) {
+            setState(() {
+              _downloadProgress = progress * 0.8;
+            });
+          },
+        );
+
+        // Download PDF if available (remaining 20% of progress)
+        if (widget.song.lyricsUrl != null && widget.song.lyricsUrl!.isNotEmpty) {
+          await offlineNotifier.downloadPdf(
+            song: widget.song,
+            onProgress: (progress) {
+              setState(() {
+                _downloadProgress = 0.8 + (progress * 0.2);
+              });
+            },
+          );
+        }
+
+        setState(() {
+          _downloadProgress = 1.0;
+        });
+
+        final seq = _player.sequenceState;
+        final currentSource = seq.currentSource;
+        final mediaItem = currentSource != null ? currentSource.tag as MediaItem? : null;
+        if (mediaItem?.id == '${widget.song.id}_${widget.voice}') {
+          await _init();
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error al descargar: $e')),
+          );
+        }
+      } finally {
+        if (mounted) {
+          setState(() {
+            _downloading = false;
+          });
+        }
+      }
+    }
+  }
+
   Future<void> _viewPdfInApp(String rawUrl, String title) async {
+    final offlineNotifier = ref.read(offlineAudioProvider.notifier);
+    final localPath = await offlineNotifier.getLocalPdfPathIfCached(widget.song.id);
+
+    if (localPath != null) {
+      try {
+        final uri = Uri.file(localPath);
+        final canLaunch = await canLaunchUrl(uri);
+        if (canLaunch) {
+          await launchUrl(uri);
+          return;
+        }
+      } catch (e) {
+        debugPrint('Error launching local PDF: $e');
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Abriendo vista previa en línea (requiere internet)...')),
+        );
+      }
+    }
+
     String? url;
     try {
       url = await resolveStorageUrl(rawUrl);
@@ -236,7 +398,9 @@ class _SongDetailScreenState extends ConsumerState<SongDetailScreen> {
 
   @override
   void dispose() {
-    _player.dispose();
+    _positionSubscription?.cancel();
+    _durationSubscription?.cancel();
+    _stateSubscription?.cancel();
     super.dispose();
   }
 
@@ -275,8 +439,66 @@ class _SongDetailScreenState extends ConsumerState<SongDetailScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Voz: $voice'),
-            if (song.tone != null) Text('Tono: ${song.tone}'),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Voz: ${trackKeyToLabel(voice)}',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                    ),
+                    if (song.tone != null)
+                      Text(
+                        'Tono: ${song.tone}',
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
+                  ],
+                ),
+                _downloading
+                    ? SizedBox(
+                        width: 48,
+                        height: 48,
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            CircularProgressIndicator(
+                              value: _downloadProgress,
+                              strokeWidth: 3,
+                            ),
+                            Text(
+                              '${(_downloadProgress * 100).round()}%',
+                              style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+                            ),
+                          ],
+                        ),
+                      )
+                    : Consumer(
+                        builder: (context, ref, _) {
+                          final offline = ref.watch(offlineAudioProvider);
+                          final isCached = offline['${song.id}_$voice'] ?? false;
+
+                          return IconButton(
+                            icon: Icon(
+                              isCached
+                                  ? Icons.download_done_rounded
+                                  : Icons.download_rounded,
+                              color: isCached
+                                  ? Theme.of(context).colorScheme.primary
+                                  : Theme.of(context).colorScheme.onSurfaceVariant,
+                            ),
+                            tooltip: isCached
+                                ? 'Eliminar descarga local'
+                                : 'Descargar para ensayar sin internet',
+                            onPressed: _toggleDownload,
+                          );
+                        },
+                      ),
+              ],
+            ),
             const SizedBox(height: 24),
             if (_loading)
               const Center(child: CircularProgressIndicator())
